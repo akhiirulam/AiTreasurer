@@ -1,9 +1,8 @@
 import express from "express";
+import router from "./routes";
 
 export const app = express();
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("hello");
-});
+app.use("/api", router);
