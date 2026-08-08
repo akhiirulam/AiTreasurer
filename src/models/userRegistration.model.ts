@@ -66,7 +66,6 @@ const userRegistrationSchema = new Schema<IUserRegistration>(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
     },
 
     role: {
