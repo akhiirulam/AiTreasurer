@@ -41,7 +41,7 @@ const userRegistrationSchema = new Schema<IUserRegistration>(
 
     mobileNumber: {
       type: String,
-      required: [true, "Mobile number is required"],
+      required: false,
       unique: true,
       trim: true,
     },
