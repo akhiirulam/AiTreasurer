@@ -1,0 +1,365 @@
+import { GoogleGenAI } from "@google/genai";
+import "dotenv/config";
+
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+  throw new Error("GEMINI_API_KEY is not configured");
+}
+
+const ai = new GoogleGenAI({
+  apiKey,
+});
+
+interface ParseTransactionData {
+  text: string;
+  file?: Express.Multer.File;
+}
+
+interface ParsedTransaction {
+  type: "income" | "expense" | "purchase" | "sale" | "payment";
+  amount: number;
+  description: string;
+  category: string | null;
+  customerName: string | null;
+  supplierName: string | null;
+  transactionDate: string;
+  paymentStatus: "paid" | "unpaid" | "partial" | "unknown";
+  paidAmount: number;
+  outstandingAmount: number;
+  debitAccount: string;
+  creditAccount: string;
+}
+
+interface ParsedTransactionsResponse {
+  transactions: ParsedTransaction[];
+}
+
+class TransactionParserService {
+  async parseTransaction(
+    data: ParseTransactionData,
+  ): Promise<ParsedTransaction[]> {
+    const { text, file } = data;
+
+    const prompt = `
+You are an AI bookkeeping assistant for a small business.
+
+Analyze the business transaction message provided by the user.
+
+Transaction:
+"${text}"
+
+IMPORTANT:
+A single message can contain ONE or MULTIPLE independent financial transactions.
+
+You MUST create a separate transaction object for EACH independent transaction.
+
+NEVER combine multiple independent transactions into one transaction.
+
+Example:
+
+Input:
+"Paid ₹3,200 for electricity and ₹1,800 for internet this month."
+
+This contains TWO transactions:
+
+Transaction 1:
+- Electricity
+- ₹3,200
+
+Transaction 2:
+- Internet
+- ₹1,800
+
+The total of ₹5,000 must NEVER be stored as a single transaction.
+
+The dashboard or accounting reports may later calculate the total,
+but each individual transaction must retain its original amount.
+
+--------------------------------------------------
+TRANSACTION INFORMATION
+--------------------------------------------------
+
+For EACH transaction identify:
+
+1. type
+   - income
+   - expense
+   - purchase
+   - sale
+   - payment
+
+2. amount
+   - The amount belonging ONLY to this transaction.
+   - Do NOT add amounts from other transactions.
+   - Must be a number.
+   - Do not include currency symbols.
+
+3. description
+   - A short and clear description of this transaction.
+
+4. category
+   - Identify the most appropriate category.
+
+   Examples:
+   - Sales
+   - Purchases
+   - Rent
+   - Electricity
+   - Internet
+   - Stationery
+   - Transportation
+   - Salary
+   - Office Supplies
+   - Raw Materials
+   - Food
+   - Other
+
+   If the category cannot be determined, return null.
+
+5. customerName
+   - Extract the customer/buyer name if mentioned.
+   - If not mentioned, return null.
+   - Never invent a name.
+
+6. supplierName
+   - Extract the supplier/vendor name if mentioned.
+   - If not mentioned, return null.
+   - Never invent a name.
+
+7. transactionDate
+   - Extract the date if explicitly mentioned.
+   - If no date is mentioned, use today's date.
+   - Format: YYYY-MM-DD.
+
+8. paymentStatus
+   - paid
+   - unpaid
+   - partial
+   - unknown
+
+9. paidAmount
+   - Amount actually paid for THIS transaction.
+   - If fully paid, paidAmount = amount.
+   - If unpaid, paidAmount = 0.
+   - If partially paid, use the amount already paid.
+   - Must be a number.
+
+10. outstandingAmount
+   - Amount still owed for THIS transaction.
+   - If fully paid, outstandingAmount = 0.
+   - If unpaid, outstandingAmount = amount.
+   - If partially paid:
+     outstandingAmount = amount - paidAmount.
+   - Must be a number.
+
+11. debitAccount
+   - Select ONLY from this list:
+
+   - Cash
+   - Bank
+   - Accounts Receivable
+   - Purchases
+   - Sales
+   - Rent Expense
+   - Electricity Expense
+   - Internet Expense
+   - Salary Expense
+   - Stationery Expense
+   - Transportation Expense
+   - Office Supplies Expense
+   - Raw Materials
+   - Other Expense
+
+12. creditAccount
+   - Select ONLY from this list:
+
+   - Cash
+   - Bank
+   - Accounts Receivable
+   - Accounts Payable
+   - Sales
+   - Purchases
+   - Rent Expense
+   - Electricity Expense
+   - Internet Expense
+   - Salary Expense
+   - Stationery Expense
+   - Transportation Expense
+   - Office Supplies Expense
+   - Raw Materials
+   - Other Expense
+
+--------------------------------------------------
+ACCOUNTING RULES
+--------------------------------------------------
+
+Purchase paid immediately:
+- Debit Purchases or appropriate expense account.
+- Credit Cash or Bank.
+
+Purchase on credit:
+- Debit Purchases or appropriate expense account.
+- Credit Accounts Payable.
+
+Sale paid immediately:
+- Debit Cash or Bank.
+- Credit Sales.
+
+Sale on credit:
+- Debit Accounts Receivable.
+- Credit Sales.
+
+Expense paid immediately:
+- Debit appropriate Expense account.
+- Credit Cash or Bank.
+
+Expense unpaid:
+- Debit appropriate Expense account.
+- Credit Accounts Payable.
+
+Customer payment:
+- Debit Cash or Bank.
+- Credit Accounts Receivable.
+
+Supplier payment:
+- Debit Accounts Payable.
+- Credit Cash or Bank.
+
+Partial payment:
+- paymentStatus = "partial"
+- paidAmount = amount already paid
+- outstandingAmount = amount - paidAmount
+
+--------------------------------------------------
+MULTIPLE TRANSACTION RULES
+--------------------------------------------------
+
+If the message contains multiple independent transactions:
+
+1. Create a separate object for every transaction.
+2. Preserve the original amount of each transaction.
+3. Never add amounts together.
+4. Never merge different categories.
+5. Never merge different suppliers.
+6. Never merge different customers.
+7. Each transaction must have its own accounting information.
+8. Each transaction must have its own payment status.
+9. Each transaction must have its own paidAmount.
+10. Each transaction must have its own outstandingAmount.
+
+For example:
+
+Input:
+"Paid ₹3,200 for electricity and ₹1,800 for internet this month."
+
+Correct:
+
+transactions[0].amount = 3200
+transactions[0].category = "Electricity"
+
+transactions[1].amount = 1800
+transactions[1].category = "Internet"
+
+Incorrect:
+
+transactions[0].amount = 5000
+
+--------------------------------------------------
+IMPORTANT RULES
+--------------------------------------------------
+
+- Do not invent customer names.
+- Do not invent supplier names.
+- Do not invent amounts.
+- Do not combine independent transactions.
+- Do not calculate a combined amount.
+- Do not invent dates.
+- If customer is not mentioned, use null.
+- If supplier is not mentioned, use null.
+- If category cannot be determined, use null.
+- If payment status cannot be determined, use "unknown".
+- amount must always be a number.
+- paidAmount must always be a number.
+- outstandingAmount must always be a number.
+- Return ONLY valid JSON.
+- Do not return Markdown.
+- Do not return explanations.
+- Do not wrap the JSON in \`\`\`json.
+
+--------------------------------------------------
+RETURN FORMAT
+--------------------------------------------------
+
+Return exactly this structure:
+
+{
+  "transactions": [
+    {
+      "type": "expense",
+      "amount": 3200,
+      "description": "Electricity payment",
+      "category": "Electricity",
+      "customerName": null,
+      "supplierName": null,
+      "transactionDate": "YYYY-MM-DD",
+      "paymentStatus": "paid",
+      "paidAmount": 3200,
+      "outstandingAmount": 0,
+      "debitAccount": "Electricity Expense",
+      "creditAccount": "Cash"
+    }
+  ]
+}
+`;
+
+    console.log("Gemini API key loaded:", Boolean(process.env.GEMINI_API_KEY));
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+    });
+
+    console.log("Gemini response:", response.text);
+
+    const responseText = response.text;
+
+    if (!responseText) {
+      throw new Error("Gemini returned an empty response");
+    }
+
+    // Remove markdown ```json ... ``` if Gemini returns it
+    const cleanedResponse = responseText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const parsed: ParsedTransactionsResponse = JSON.parse(cleanedResponse);
+
+    if (!parsed.transactions || !Array.isArray(parsed.transactions)) {
+      throw new Error("Invalid Gemini response: transactions array missing");
+    }
+
+    for (const transaction of parsed.transactions) {
+      if (!transaction.type) {
+        throw new Error("Invalid transaction: type missing");
+      }
+
+      if (typeof transaction.amount !== "number") {
+        throw new Error("Invalid transaction: amount must be a number");
+      }
+
+      if (!transaction.description) {
+        throw new Error("Invalid transaction: description missing");
+      }
+
+      if (!transaction.transactionDate) {
+        throw new Error("Invalid transaction: transactionDate missing");
+      }
+    }
+
+    return parsed.transactions;
+  }
+}
+
+export default new TransactionParserService();
