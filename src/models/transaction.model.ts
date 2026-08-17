@@ -34,6 +34,8 @@ export interface ITransaction extends Document {
   debitAccount: string;
 
   creditAccount: string;
+  debitAccountId: mongoose.Types.ObjectId;
+  creditAccountId: mongoose.Types.ObjectId;
 }
 
 const transactionSchema = new Schema<ITransaction>(
@@ -109,6 +111,17 @@ const transactionSchema = new Schema<ITransaction>(
 
     creditAccount: {
       type: String,
+      required: true,
+    },
+    debitAccountId: {
+      type: Schema.Types.ObjectId,
+      ref: "Account",
+      required: true,
+    },
+
+    creditAccountId: {
+      type: Schema.Types.ObjectId,
+      ref: "Account",
       required: true,
     },
   },

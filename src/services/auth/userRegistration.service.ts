@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+
 import userRegistrationRepository from "../../repositories/auth/userRegistration.repository";
 
 interface RegisterUserData {
@@ -15,7 +16,7 @@ class UserRegistrationService {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check email
+    // 1. Check email
     const existingEmail =
       await userRegistrationRepository.findByEmail(normalizedEmail);
 
@@ -23,7 +24,7 @@ class UserRegistrationService {
       throw new Error("Email is already registered");
     }
 
-    // Check mobile number
+    // 2. Check mobile number
     const existingMobile =
       await userRegistrationRepository.findByMobileNumber(mobileNumber);
 
@@ -31,10 +32,10 @@ class UserRegistrationService {
       throw new Error("Mobile number is already registered");
     }
 
-    // Hash password
+    // 3. Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // 4. Create shopkeeper/user
     const user = await userRegistrationRepository.create({
       fullName,
       email: normalizedEmail,

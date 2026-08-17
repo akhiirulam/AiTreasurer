@@ -1,12 +1,18 @@
 import mongoose from "mongoose";
 
 import transactionRepository from "../../repositories/transaction/transaction.repository";
+
 import transactionParserService from "../aiParser/transactionParser";
+
 import supplierRepository from "../../repositories/supplier/Supplier.repositories";
+
+import accountService from "../account/account.service";
 
 interface CreateTransactionData {
   userId: string;
+
   text: string;
+
   file?: Express.Multer.File;
 }
 
@@ -16,21 +22,28 @@ class TransactionService {
 
     console.log("Transaction text:", text);
 
-    // 1. Parse transaction using Gemini
+    // ==================================================
+    // 1. PARSE TRANSACTION USING GEMINI
+    // ==================================================
+
     const parsedTransactions = await transactionParserService.parseTransaction({
       text,
       file,
     });
 
-    // 2. Store each parsed transaction
     const transactions = [];
 
+    // ==================================================
+    // 2. PROCESS EACH TRANSACTION
+    // ==================================================
+
     for (const parsedTransaction of parsedTransactions) {
-      // IMPORTANT:
-      // supplierId must be reset for every transaction
+      // ==================================================
+      // SUPPLIER
+      // ==================================================
+
       let supplierId: mongoose.Types.ObjectId | null = null;
 
-      // Find/create supplier using the name extracted by Gemini
       if (parsedTransaction.supplierName) {
         const supplier = await supplierRepository.findOrCreate(
           userId,
@@ -39,6 +52,40 @@ class TransactionService {
 
         supplierId = supplier._id;
       }
+
+      // ==================================================
+      // DEBIT ACCOUNT
+      // ==================================================
+
+      const debitAccount = await accountService.getOrCreateAccount(
+        userId,
+        parsedTransaction.debitAccount,
+      );
+
+      if (!debitAccount) {
+        throw new Error(
+          `Unable to create debit account: ${parsedTransaction.debitAccount}`,
+        );
+      }
+
+      // ==================================================
+      // CREDIT ACCOUNT
+      // ==================================================
+
+      const creditAccount = await accountService.getOrCreateAccount(
+        userId,
+        parsedTransaction.creditAccount,
+      );
+
+      if (!creditAccount) {
+        throw new Error(
+          `Unable to create credit account: ${parsedTransaction.creditAccount}`,
+        );
+      }
+
+      // ==================================================
+      // CREATE TRANSACTION
+      // ==================================================
 
       const transaction = await transactionRepository.create({
         userId: new mongoose.Types.ObjectId(userId),
@@ -65,15 +112,20 @@ class TransactionService {
 
         outstandingAmount: parsedTransaction.outstandingAmount,
 
-        debitAccount: parsedTransaction.debitAccount,
+        // Account names
+        debitAccount: debitAccount.name,
 
-        creditAccount: parsedTransaction.creditAccount,
+        creditAccount: creditAccount.name,
+
+        // User account IDs
+        debitAccountId: debitAccount._id,
+
+        creditAccountId: creditAccount._id,
       });
 
       transactions.push(transaction);
     }
 
-    // 3. Return all created transactions
     return transactions;
   }
 }

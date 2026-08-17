@@ -3,6 +3,8 @@ import "dotenv/config";
 
 const apiKey = process.env.GEMINI_API_KEY;
 
+type AccountType = "asset" | "liability" | "equity" | "income" | "expense";
+
 if (!apiKey) {
   throw new Error("GEMINI_API_KEY is not configured");
 }
@@ -15,21 +17,27 @@ interface ParseTransactionData {
   text: string;
   file?: Express.Multer.File;
 }
-
-interface ParsedTransaction {
+type ParsedTransaction = {
   type: "income" | "expense" | "purchase" | "sale" | "payment";
   amount: number;
   description: string;
   category: string | null;
+
   customerName: string | null;
   supplierName: string | null;
+
   transactionDate: string;
+
   paymentStatus: "paid" | "unpaid" | "partial" | "unknown";
   paidAmount: number;
   outstandingAmount: number;
+
   debitAccount: string;
+  debitAccountType: AccountType;
+
   creditAccount: string;
-}
+  creditAccountType: AccountType;
+};
 
 interface ParsedTransactionsResponse {
   transactions: ParsedTransaction[];
