@@ -1,10 +1,18 @@
+import mongoose from "mongoose";
 import Transaction, { ITransaction } from "../../models/transaction.model";
 
 class TransactionRepository {
-  async create(transactionData: Partial<ITransaction>): Promise<ITransaction> {
-    const transaction = new Transaction(transactionData);
+  async create(
+    data: Partial<ITransaction>,
+    session?: mongoose.ClientSession,
+  ): Promise<ITransaction> {
+    const transaction = new Transaction(data);
 
-    return await transaction.save();
+    await transaction.save({
+      session,
+    });
+
+    return transaction;
   }
 
   async findById(transactionId: string): Promise<ITransaction | null> {

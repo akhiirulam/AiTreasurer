@@ -8,11 +8,11 @@ import supplierRepository from "../../repositories/supplier/Supplier.repositorie
 
 import accountService from "../account/account.service";
 
+import journalEntryService from "../journalEntry/journalEntry.service";
+
 interface CreateTransactionData {
   userId: string;
-
   text: string;
-
   file?: Express.Multer.File;
 }
 
@@ -23,110 +23,172 @@ class TransactionService {
     console.log("Transaction text:", text);
 
     // ==================================================
-    // 1. PARSE TRANSACTION USING GEMINI
+    // START MONGODB TRANSACTION
     // ==================================================
 
-    const parsedTransactions = await transactionParserService.parseTransaction({
-      text,
-      file,
-    });
+    const session = await mongoose.startSession();
 
-    const transactions = [];
+    try {
+      session.startTransaction();
 
-    // ==================================================
-    // 2. PROCESS EACH TRANSACTION
-    // ==================================================
-
-    for (const parsedTransaction of parsedTransactions) {
       // ==================================================
-      // SUPPLIER
+      // 1. PARSE TRANSACTION USING GEMINI
       // ==================================================
 
-      let supplierId: mongoose.Types.ObjectId | null = null;
+      const parsedTransactions =
+        await transactionParserService.parseTransaction({
+          text,
+          file,
+        });
 
-      if (parsedTransaction.supplierName) {
-        const supplier = await supplierRepository.findOrCreate(
+      const transactions = [];
+
+      // ==================================================
+      // 2. PROCESS EACH PARSED TRANSACTION
+      // ==================================================
+
+      for (const parsedTransaction of parsedTransactions) {
+        // ==================================================
+        // SUPPLIER
+        // ==================================================
+
+        let supplierId: mongoose.Types.ObjectId | null = null;
+
+        if (parsedTransaction.supplierName) {
+          const supplier = await supplierRepository.findOrCreate(
+            userId,
+            parsedTransaction.supplierName,
+          );
+
+          supplierId = supplier._id;
+        }
+
+        // ==================================================
+        // DEBIT ACCOUNT
+        // ==================================================
+
+        const debitAccount = await accountService.getOrCreateAccount(
           userId,
-          parsedTransaction.supplierName,
+          parsedTransaction.debitAccount,
         );
 
-        supplierId = supplier._id;
+        if (!debitAccount) {
+          throw new Error(
+            `Unable to create debit account: ${parsedTransaction.debitAccount}`,
+          );
+        }
+
+        // ==================================================
+        // CREDIT ACCOUNT
+        // ==================================================
+
+        const creditAccount = await accountService.getOrCreateAccount(
+          userId,
+          parsedTransaction.creditAccount,
+        );
+
+        if (!creditAccount) {
+          throw new Error(
+            `Unable to create credit account: ${parsedTransaction.creditAccount}`,
+          );
+        }
+
+        // ==================================================
+        // CREATE TRANSACTION
+        // ==================================================
+
+        const transaction = await transactionRepository.create(
+          {
+            userId: new mongoose.Types.ObjectId(userId),
+
+            rawText: text,
+
+            type: parsedTransaction.type,
+
+            amount: parsedTransaction.amount,
+
+            description: parsedTransaction.description,
+
+            category: parsedTransaction.category,
+
+            customer: parsedTransaction.customerName,
+
+            supplierId,
+
+            transactionDate: new Date(parsedTransaction.transactionDate),
+
+            paymentStatus: parsedTransaction.paymentStatus,
+
+            paidAmount: parsedTransaction.paidAmount,
+
+            outstandingAmount: parsedTransaction.outstandingAmount,
+
+            debitAccount: debitAccount.name,
+
+            creditAccount: creditAccount.name,
+
+            debitAccountId: debitAccount._id,
+
+            creditAccountId: creditAccount._id,
+          },
+          session,
+        );
+
+        // ==================================================
+        // CREATE JOURNAL ENTRY
+        // ==================================================
+
+        await journalEntryService.createJournalEntry({
+          userId,
+
+          transactionId: transaction._id,
+
+          entryDate: transaction.transactionDate,
+
+          description: transaction.description,
+
+          debitAccountId: transaction.debitAccountId,
+
+          creditAccountId: transaction.creditAccountId,
+
+          amount: transaction.amount,
+
+          session,
+        });
+
+        // ==================================================
+        // ADD TO RESULT
+        // ==================================================
+
+        transactions.push(transaction);
       }
 
       // ==================================================
-      // DEBIT ACCOUNT
+      // COMMIT EVERYTHING
       // ==================================================
 
-      const debitAccount = await accountService.getOrCreateAccount(
-        userId,
-        parsedTransaction.debitAccount,
-      );
+      await session.commitTransaction();
 
-      if (!debitAccount) {
-        throw new Error(
-          `Unable to create debit account: ${parsedTransaction.debitAccount}`,
-        );
-      }
+      console.log("Transaction + Journal Entry committed successfully");
 
+      return transactions;
+    } catch (error) {
       // ==================================================
-      // CREDIT ACCOUNT
+      // ROLLBACK EVERYTHING
       // ==================================================
 
-      const creditAccount = await accountService.getOrCreateAccount(
-        userId,
-        parsedTransaction.creditAccount,
-      );
+      await session.abortTransaction();
 
-      if (!creditAccount) {
-        throw new Error(
-          `Unable to create credit account: ${parsedTransaction.creditAccount}`,
-        );
-      }
+      console.error("Transaction rolled back:", error);
 
+      throw error;
+    } finally {
       // ==================================================
-      // CREATE TRANSACTION
+      // CLOSE SESSION
       // ==================================================
 
-      const transaction = await transactionRepository.create({
-        userId: new mongoose.Types.ObjectId(userId),
-
-        rawText: text,
-
-        type: parsedTransaction.type,
-
-        amount: parsedTransaction.amount,
-
-        description: parsedTransaction.description,
-
-        category: parsedTransaction.category,
-
-        customer: parsedTransaction.customerName,
-
-        supplierId,
-
-        transactionDate: new Date(parsedTransaction.transactionDate),
-
-        paymentStatus: parsedTransaction.paymentStatus,
-
-        paidAmount: parsedTransaction.paidAmount,
-
-        outstandingAmount: parsedTransaction.outstandingAmount,
-
-        // Account names
-        debitAccount: debitAccount.name,
-
-        creditAccount: creditAccount.name,
-
-        // User account IDs
-        debitAccountId: debitAccount._id,
-
-        creditAccountId: creditAccount._id,
-      });
-
-      transactions.push(transaction);
+      await session.endSession();
     }
-
-    return transactions;
   }
 }
 
