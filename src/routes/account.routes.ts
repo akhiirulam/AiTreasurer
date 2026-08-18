@@ -1,23 +1,24 @@
 import { Router } from "express";
 
 import {
-  createTemplate,
-  getTemplates,
-  getTemplate,
-  updateTemplate,
-  deleteTemplate,
-} from "../controllers/account/accountTemplate.controller";
+  createAccount,
+  createFromTemplate,
+  getAccounts,
+  getAccount,
+  findByName,
+  updateAccount,
+  deleteAccount,
+} from "../controllers/account/account.controller";
+import authenticate from "../middleware/auth.middleware";
 
-const accoutRouter = Router();
+const accountRouter = Router();
 
-accoutRouter.post("/", createTemplate);
+accountRouter.post("/", authenticate, createAccount);
+accountRouter.post("/from-template", authenticate, createFromTemplate);
+accountRouter.get("/", authenticate, getAccounts);
+accountRouter.get("/search", authenticate, findByName);
+accountRouter.get("/:accountId", authenticate, getAccount);
+accountRouter.put("/:accountId", authenticate, updateAccount);
+accountRouter.delete("/:accountId", authenticate, deleteAccount);
 
-accoutRouter.get("/", getTemplates);
-
-accoutRouter.get("/:id", getTemplate);
-
-accoutRouter.put("/:id", updateTemplate);
-
-accoutRouter.delete("/:id", deleteTemplate);
-
-export default accoutRouter;
+export default accountRouter;

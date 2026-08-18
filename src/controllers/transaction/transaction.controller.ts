@@ -9,7 +9,7 @@ export const createWebTransaction = async (
   try {
     const { text, userId } = req.body;
 
-    console.log(text, userId);
+    console.log(text);
 
     // Validate transaction text
     if (!text || !text.trim()) {

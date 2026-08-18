@@ -1,314 +1,352 @@
-// import { Request, Response } from "express";
-// import accountService from "../../services/account/account.service";
+import { Response } from "express";
 
-// /**
-//  * GET /accounts
-//  *
-//  * Get all accounts belonging to the logged-in shopkeeper.
-//  */
-// export const getAccounts = async (
-//   req: Request,
-//   res: Response,
-// ): Promise<Response> => {
-//   try {
-//     const { userId } = req.query;
+import accountService from "../../services/account/account.service";
 
-//     if (!userId || typeof userId !== "string") {
-//       return res.status(400).json({
-//         success: false,
-//         message: "User ID is required",
-//       });
-//     }
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 
-//     const accounts = await accountService.getAccounts(userId);
+/**
+ * Create an account manually for the authenticated user.
+ */
+export const createAccount = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.userId;
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Accounts fetched successfully",
-//       data: accounts,
-//     });
-//   } catch (error: any) {
-//     console.error("Get accounts error:", error);
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to fetch accounts",
-//     });
-//   }
-// };
+    const { name, type, description } = req.body;
 
-// /**
-//  * GET /accounts/:id
-//  *
-//  * Get one account belonging to the shopkeeper.
-//  */
-// export const getAccount = async (
-//   req: Request,
-//   res: Response,
-// ): Promise<Response> => {
-//   try {
-//     const { userId } = req.query;
-//     const { id } = req.params;
+    if (!name || !type) {
+      return res.status(400).json({
+        success: false,
+        message: "Account name and type are required",
+      });
+    }
 
-//     if (!userId || typeof userId !== "string") {
-//       return res.status(400).json({
-//         success: false,
-//         message: "User ID is required",
-//       });
-//     }
+    const account = await accountService.createAccount(userId, {
+      name,
+      type,
+      description,
+    });
 
-//     if (!id) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Account ID is required",
-//       });
-//     }
+    return res.status(201).json({
+      success: true,
+      message: "Account created successfully",
+      data: account,
+    });
+  } catch (error) {
+    console.error("Create account error:", error);
 
-//     const account = await accountService.getAccount(userId, id);
+    return res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to create account",
+    });
+  }
+};
 
-//     if (!account) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Account not found",
-//       });
-//     }
+/**
+ * Create/get a user's account from a GLOBAL account template.
+ */
+export const createFromTemplate = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.userId;
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Account fetched successfully",
-//       data: account,
-//     });
-//   } catch (error: any) {
-//     console.error("Get account error:", error);
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to fetch account",
-//     });
-//   }
-// };
+    const { templateName } = req.body;
 
-// /**
-//  * POST /accounts/from-template
-//  *
-//  * Create a shopkeeper's account from a shared AccountTemplate.
-//  *
-//  * Example:
-//  * {
-//  *   "userId": "...",
-//  *   "templateId": "..."
-//  * }
-//  */
-// export const createAccountFromTemplate = async (
-//   req: Request,
-//   res: Response,
-// ): Promise<Response> => {
-//   try {
-//     const { userId, templateId } = req.body;
+    if (!templateName) {
+      return res.status(400).json({
+        success: false,
+        message: "Template name is required",
+      });
+    }
 
-//     if (!userId || !templateId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "userId and templateId are required",
-//       });
-//     }
+    const account = await accountService.getOrCreateFromTemplate(
+      userId,
+      templateName,
+    );
 
-//     const account = await accountService.createFromTemplate(
-//       userId,
-//       templateId,
-//     );
+    return res.status(201).json({
+      success: true,
+      message: "Account created from template successfully",
+      data: account,
+    });
+  } catch (error) {
+    console.error("Create account from template error:", error);
 
-//     return res.status(201).json({
-//       success: true,
-//       message: "Account created from template successfully",
-//       data: account,
-//     });
-//   } catch (error: any) {
-//     console.error("Create account from template error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to create account from template";
 
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to create account",
-//     });
-//   }
-// };
+    if (message.includes("not found")) {
+      return res.status(404).json({
+        success: false,
+        message,
+      });
+    }
 
-// /**
-//  * POST /accounts
-//  *
-//  * Create a completely custom account.
-//  *
-//  * This is useful when the shopkeeper needs an account
-//  * that does not exist in the common templates.
-//  *
-//  * Example:
-//  * {
-//  *   "userId": "...",
-//  *   "name": "Advertisement Expense",
-//  *   "code": "6200",
-//  *   "type": "expense",
-//  *   "description": "Advertising and marketing expenses"
-//  * }
-//  */
-// export const createAccount = async (
-//   req: Request,
-//   res: Response,
-// ): Promise<Response> => {
-//   try {
-//     const {
-//       userId,
-//       name,
-//       code,
-//       type,
-//       description,
-//     } = req.body;
+    return res.status(500).json({
+      success: false,
+      message,
+    });
+  }
+};
 
-//     if (!userId || !name || !code || !type) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "userId, name, code and type are required",
-//       });
-//     }
+/**
+ * Get all accounts belonging to the authenticated user.
+ */
+export const getAccounts = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId;
 
-//     const account = await accountService.createAccount(userId, {
-//       name,
-//       code,
-//       type,
-//       description,
-//     });
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-//     return res.status(201).json({
-//       success: true,
-//       message: "Custom account created successfully",
-//       data: account,
-//     });
-//   } catch (error: any) {
-//     console.error("Create account error:", error);
+    const accounts = await accountService.getAccounts(userId);
 
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to create account",
-//     });
-//   }
-// };
+    return res.status(200).json({
+      success: true,
+      data: accounts,
+    });
+  } catch (error) {
+    console.error("Get accounts error:", error);
 
-// /**
-//  * PUT /accounts/:id
-//  *
-//  * Update an existing user account.
-//  */
-// export const updateAccount = async (
-//   req: Request,
-//   res: Response,
-// ): Promise<Response> => {
-//   try {
-//     const { userId } = req.body;
-//     const { id } = req.params;
+    return res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to get accounts",
+    });
+  }
+};
 
-//     const {
-//       name,
-//       description,
-//       isActive,
-//     } = req.body;
+/**
+ * Get one account belonging to the authenticated user.
+ */
+export const getAccount = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId;
 
-//     if (!userId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "User ID is required",
-//       });
-//     }
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-//     if (!id) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Account ID is required",
-//       });
-//     }
+    const { accountId } = req.params;
 
-//     const account = await accountService.updateAccount(
-//       userId,
-//       id,
-//       {
-//         name,
-//         description,
-//         isActive,
-//       },
-//     );
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        message: "Account ID is required",
+      });
+    }
 
-//     if (!account) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Account not found",
-//       });
-//     }
+    const account = await accountService.getAccount(userId, accountId);
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Account updated successfully",
-//       data: account,
-//     });
-//   } catch (error: any) {
-//     console.error("Update account error:", error);
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
+    }
 
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to update account",
-//     });
-//   }
-// };
+    return res.status(200).json({
+      success: true,
+      data: account,
+    });
+  } catch (error) {
+    console.error("Get account error:", error);
 
-// /**
-//  * DELETE /accounts/:id
-//  *
-//  * Delete a custom account.
-//  *
-//  * System accounts created from templates should not be deleted.
-//  */
-// export const deleteAccount = async (
-//   req: Request,
-//   res: Response,
-// ): Promise<Response> => {
-//   try {
-//     const { userId } = req.body;
-//     const { id } = req.params;
+    return res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to get account",
+    });
+  }
+};
 
-//     if (!userId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "User ID is required",
-//       });
-//     }
+/**
+ * Find an account by name for the authenticated user.
+ */
+export const findByName = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId;
 
-//     if (!id) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Account ID is required",
-//       });
-//     }
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-//     const account = await accountService.deleteAccount(
-//       userId,
-//       id,
-//     );
+    const { name } = req.query;
 
-//     if (!account) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Account not found",
-//       });
-//     }
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Account name is required",
+      });
+    }
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Account deleted successfully",
-//       data: account,
-//     });
-//   } catch (error: any) {
-//     console.error("Delete account error:", error);
+    const account = await accountService.findByName(userId, name.trim());
 
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to delete account",
-//     });
-//   }
-// };
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: account,
+    });
+  } catch (error) {
+    console.error("Find account by name error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to find account",
+    });
+  }
+};
+
+/**
+ * Update an account belonging to the authenticated user.
+ */
+export const updateAccount = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const { accountId } = req.params;
+
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        message: "Account ID is required",
+      });
+    }
+
+    const { name, description, isActive } = req.body;
+
+    const account = await accountService.updateAccount(userId, accountId, {
+      name,
+      description,
+      isActive,
+    });
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Account updated successfully",
+      data: account,
+    });
+  } catch (error) {
+    console.error("Update account error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update account",
+    });
+  }
+};
+
+/**
+ * Delete an account belonging to the authenticated user.
+ */
+export const deleteAccount = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const { accountId } = req.params;
+
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        message: "Account ID is required",
+      });
+    }
+
+    const account = await accountService.deleteAccount(userId, accountId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Account deleted successfully",
+      data: account,
+    });
+  } catch (error) {
+    console.error("Delete account error:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to delete account";
+
+    if (message === "Account not found") {
+      return res.status(404).json({
+        success: false,
+        message,
+      });
+    }
+
+    if (message === "System accounts cannot be deleted") {
+      return res.status(403).json({
+        success: false,
+        message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message,
+    });
+  }
+};
