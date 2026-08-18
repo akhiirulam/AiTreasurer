@@ -32,12 +32,6 @@ export type AccountType =
 export interface IAccount extends Document {
   userId: mongoose.Types.ObjectId;
 
-  /**
-   * Reference to the global AccountTemplate.
-   *
-   * null means this is a custom account
-   * that was not created from a template.
-   */
   templateId: mongoose.Types.ObjectId | null;
 
   name: string;
@@ -46,7 +40,12 @@ export interface IAccount extends Document {
 
   type: AccountType;
 
+  category?: string | null;
+
+  subCategory?: string | null;
+
   description?: string | null;
+  normalBalance?: "debit" | "credit" | null;
 
   isSystem: boolean;
 
@@ -128,6 +127,20 @@ const accountSchema = new Schema<IAccount>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    category: {
+      type: String,
+      default: null,
+    },
+
+    subCategory: {
+      type: String,
+      default: null,
+    },
+    normalBalance: {
+      type: String,
+      enum: ["debit", "credit"],
+      default: null,
     },
   },
   {

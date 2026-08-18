@@ -8,6 +8,7 @@ import trialBalanceRouter from "./trialBalance.routes";
 import profitLossRouter from "./profitLoss.routes";
 import accountTemplateRouter from "./accountTemplate.routes";
 import balanceSheetRouter from "./balanceSheet.routes";
+import cashBookRouter from "./cashBook.routes";
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use("/ledger", ledgerRouter);
 router.use("/trial-balance", trialBalanceRouter);
 router.use("/profit-loss", profitLossRouter);
 router.use("/balance-sheet", balanceSheetRouter);
+router.use("/cash-book", cashBookRouter);
 
 export default router;

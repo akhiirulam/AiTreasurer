@@ -1,14 +1,38 @@
 import mongoose from "mongoose";
 
 import JournalEntryLine from "../../models/journalEntryLine.model";
+import JournalEntry from "../../models/journalEntry.model";
 
 class LedgerRepository {
   /**
-   * Get journal lines for one account.
+   * Get journal lines before the requested period.
    *
-   * The JournalEntryLine does not contain userId,
-   * so user/date filtering is performed through
-   * the populated JournalEntry.
+   * These lines are used to calculate opening balance.
+   */
+  async findOpeningBalanceLines(
+    userId: mongoose.Types.ObjectId,
+    accountId: mongoose.Types.ObjectId,
+    from: Date,
+  ) {
+    const journalEntries = await JournalEntry.find({
+      userId,
+      entryDate: {
+        $lt: from,
+      },
+    }).select("_id");
+
+    const journalEntryIds = journalEntries.map((entry) => entry._id);
+
+    return await JournalEntryLine.find({
+      accountId,
+      journalEntryId: {
+        $in: journalEntryIds,
+      },
+    });
+  }
+
+  /**
+   * Get journal lines inside the requested period.
    */
   async findByAccountId(
     userId: mongoose.Types.ObjectId,
@@ -16,25 +40,23 @@ class LedgerRepository {
     from?: Date,
     to?: Date,
   ) {
-    const journalEntryFilter: any = {
+    const filter: any = {
       userId,
     };
 
     if (from || to) {
-      journalEntryFilter.entryDate = {};
+      filter.entryDate = {};
 
       if (from) {
-        journalEntryFilter.entryDate.$gte = from;
+        filter.entryDate.$gte = from;
       }
 
       if (to) {
-        journalEntryFilter.entryDate.$lte = to;
+        filter.entryDate.$lte = to;
       }
     }
 
-    const journalEntries = await mongoose
-      .model("JournalEntry")
-      .find(journalEntryFilter)
+    const journalEntries = await JournalEntry.find(filter)
       .select("_id entryDate description transactionId")
       .sort({
         entryDate: 1,
@@ -45,7 +67,6 @@ class LedgerRepository {
 
     return await JournalEntryLine.find({
       accountId,
-
       journalEntryId: {
         $in: journalEntryIds,
       },

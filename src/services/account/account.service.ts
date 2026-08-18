@@ -76,6 +76,11 @@ class AccountService {
       name: template.name,
       code: template.code,
       type: resolvedAccountType,
+
+      category: template.category,
+      subCategory: template.subCategory,
+      normalBalance: template.normalBalance,
+
       description: template.description,
 
       isSystem: true,
@@ -174,6 +179,13 @@ class AccountService {
       code: nextCode,
 
       type: data.type,
+
+      category: null,
+
+      subCategory: null,
+
+      normalBalance:
+        data.type === "asset" || data.type === "expense" ? "debit" : "credit",
 
       description: data.description ?? null,
 

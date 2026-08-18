@@ -1,14 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 
-import ledgerService from "../../services/ledger/ledger.service";
+import cashBookService from "../../services/cashBook/cashBook.service";
 
-class LedgerController {
-  async getAccountLedger(req: Request, res: Response, next: NextFunction) {
+class CashBookController {
+  async getCashBook(req: Request, res: Response, next: NextFunction) {
     try {
-      const { userId, accountId, from, to } = req.query;
+      const { userId, from, to } = req.query;
 
       // ==========================================
-      // 1. USER ID
+      // 1. VALIDATE USER ID
       // ==========================================
 
       if (!userId) {
@@ -26,25 +26,7 @@ class LedgerController {
       }
 
       // ==========================================
-      // 2. ACCOUNT ID
-      // ==========================================
-
-      if (!accountId) {
-        return res.status(400).json({
-          success: false,
-          message: "Account ID is required",
-        });
-      }
-
-      if (Array.isArray(accountId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid account ID",
-        });
-      }
-
-      // ==========================================
-      // 3. DATE PARAMETERS
+      // 2. VALIDATE DATE PARAMETERS
       // ==========================================
 
       if (Array.isArray(from) || Array.isArray(to)) {
@@ -55,7 +37,7 @@ class LedgerController {
       }
 
       // ==========================================
-      // 4. CONVERT DATES
+      // 3. CONVERT DATES
       // ==========================================
 
       const fromDate = from ? new Date(`${from}T00:00:00.000Z`) : undefined;
@@ -63,7 +45,7 @@ class LedgerController {
       const toDate = to ? new Date(`${to}T23:59:59.999Z`) : undefined;
 
       // ==========================================
-      // 5. VALIDATE DATES
+      // 4. VALIDATE FROM DATE
       // ==========================================
 
       if (fromDate && isNaN(fromDate.getTime())) {
@@ -72,6 +54,10 @@ class LedgerController {
           message: "Invalid from date",
         });
       }
+
+      // ==========================================
+      // 5. VALIDATE TO DATE
+      // ==========================================
 
       if (toDate && isNaN(toDate.getTime())) {
         return res.status(400).json({
@@ -92,12 +78,11 @@ class LedgerController {
       }
 
       // ==========================================
-      // 7. GET LEDGER
+      // 7. GET CASH BOOK
       // ==========================================
 
-      const result = await ledgerService.getAccountLedger(
+      const result = await cashBookService.getCashBook(
         userId,
-        accountId,
         fromDate,
         toDate,
       );
@@ -116,4 +101,4 @@ class LedgerController {
   }
 }
 
-export default new LedgerController();
+export default new CashBookController();

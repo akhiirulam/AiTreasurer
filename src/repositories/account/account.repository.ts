@@ -5,15 +5,23 @@ import Account, { AccountType, IAccount } from "../../models/account.model";
 interface CreateAccountData {
   userId: string;
 
-  templateId?: string | null;
+  templateId: string | null;
 
   name: string;
+
   code: string;
+
   type: AccountType;
+
+  category?: string | null;
+
+  subCategory?: string | null;
+
+  normalBalance?: "debit" | "credit" | null;
 
   description?: string | null;
 
-  isSystem?: boolean;
+  isSystem: boolean;
 }
 
 class AccountRepository {
@@ -30,6 +38,11 @@ class AccountRepository {
       code: data.code.trim(),
 
       type: data.type,
+      category: data.category ?? null,
+
+      subCategory: data.subCategory ?? null,
+
+      normalBalance: data.normalBalance ?? null,
 
       description: data.description ?? null,
 
