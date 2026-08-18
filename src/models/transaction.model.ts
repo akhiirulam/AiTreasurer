@@ -5,7 +5,7 @@ export interface ITransaction extends Document {
 
   rawText: string;
 
-  type: "income" | "expense" | "purchase" | "sale" | "payment";
+  type: "income" | "expense" | "purchase" | "sale" | "payment" | "capital";
 
   amount: number;
 
@@ -53,7 +53,7 @@ const transactionSchema = new Schema<ITransaction>(
 
     type: {
       type: String,
-      enum: ["income", "expense", "purchase", "sale", "payment"],
+      enum: ["income", "expense", "purchase", "sale", "payment", "capital"],
       required: true,
     },
 

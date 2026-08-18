@@ -92,47 +92,47 @@ class AccountService {
    * then creates the user's account.
    */
 
-  private getTemplateMetadata(type: AccountType) {
-    switch (type) {
-      case "asset":
-        return {
-          category: "Asset",
-          subCategory: "Current Asset",
-          normalBalance: "debit",
-        };
+  // private getTemplateMetadata(type: AccountType) {
+  //   switch (type) {
+  //     case "asset":
+  //       return {
+  //         category: "Asset",
+  //         subCategory: "Current Asset",
+  //         normalBalance: "debit",
+  //       };
 
-      case "liability":
-        return {
-          category: "Liability",
-          subCategory: "Current Liability",
-          normalBalance: "credit",
-        };
+  //     case "liability":
+  //       return {
+  //         category: "Liability",
+  //         subCategory: "Current Liability",
+  //         normalBalance: "credit",
+  //       };
 
-      case "equity":
-        return {
-          category: "Equity",
-          subCategory: "Owner's Equity",
-          normalBalance: "credit",
-        };
+  //     case "equity":
+  //       return {
+  //         category: "Equity",
+  //         subCategory: "Owner's Equity",
+  //         normalBalance: "credit",
+  //       };
 
-      case "income":
-        return {
-          category: "Income",
-          subCategory: "Operating Income",
-          normalBalance: "credit",
-        };
+  //     case "income":
+  //       return {
+  //         category: "Income",
+  //         subCategory: "Operating Income",
+  //         normalBalance: "credit",
+  //       };
 
-      case "expense":
-        return {
-          category: "Expense",
-          subCategory: "Operating Expense",
-          normalBalance: "debit",
-        };
+  //     case "expense":
+  //       return {
+  //         category: "Expense",
+  //         subCategory: "Operating Expense",
+  //         normalBalance: "debit",
+  //       };
 
-      default:
-        throw new Error(`Unsupported account type: ${type}`);
-    }
-  }
+  //     default:
+  //       throw new Error(`Unsupported account type: ${type}`);
+  //   }
+  // }
 
   async getOrCreateFromTemplate(userId: string, templateName: string) {
     return await this.getOrCreateAccount(userId, templateName);
@@ -223,83 +223,83 @@ class AccountService {
    * Generate information required to create
    * a new GLOBAL account template.
    */
-  private buildTemplateData(name: string, type: AccountType) {
-    const baseCode = this.getTemplateBaseCode(type);
+  // private buildTemplateData(name: string, type: AccountType) {
+  //   const baseCode = this.getTemplateBaseCode(type);
 
-    const normalBalance = this.getNormalBalance(type);
+  //   const normalBalance = this.getNormalBalance(type);
 
-    return {
-      name,
+  //   return {
+  //     name,
 
-      code: `${baseCode}${Date.now().toString().slice(-3)}`,
+  //     code: `${baseCode}${Date.now().toString().slice(-3)}`,
 
-      type: type as AccountTemplateType,
+  //     type: type as AccountTemplateType,
 
-      description: `${name} account`,
+  //     description: `${name} account`,
 
-      category: type,
+  //     category: type,
 
-      subCategory: this.getSubCategory(type),
+  //     subCategory: this.getSubCategory(type),
 
-      normalBalance,
+  //     normalBalance,
 
-      isActive: true,
-    };
-  }
+  //     isActive: true,
+  //   };
+  // }
 
-  private getTemplateBaseCode(type: AccountType): number {
-    switch (type) {
-      case "asset":
-        return 1000;
+  // private getTemplateBaseCode(type: AccountType): number {
+  //   switch (type) {
+  //     case "asset":
+  //       return 1000;
 
-      case "liability":
-        return 2000;
+  //     case "liability":
+  //       return 2000;
 
-      case "equity":
-        return 3000;
+  //     case "equity":
+  //       return 3000;
 
-      case "income":
-        return 4000;
+  //     case "income":
+  //       return 4000;
 
-      case "expense":
-        return 6000;
+  //     case "expense":
+  //       return 6000;
 
-      default:
-        return 9000;
-    }
-  }
+  //     default:
+  //       return 9000;
+  //   }
+  // }
 
-  private getNormalBalance(type: AccountType): "debit" | "credit" {
-    switch (type) {
-      case "asset":
-      case "expense":
-        return "debit";
+  // private getNormalBalance(type: AccountType): "debit" | "credit" {
+  //   switch (type) {
+  //     case "asset":
+  //     case "expense":
+  //       return "debit";
 
-      case "liability":
-      case "equity":
-      case "income":
-        return "credit";
-    }
-  }
+  //     case "liability":
+  //     case "equity":
+  //     case "income":
+  //       return "credit";
+  //   }
+  // }
 
-  private getSubCategory(type: AccountType): string {
-    switch (type) {
-      case "asset":
-        return "Current Asset";
+  // private getSubCategory(type: AccountType): string {
+  //   switch (type) {
+  //     case "asset":
+  //       return "Current Asset";
 
-      case "liability":
-        return "Current Liability";
+  //     case "liability":
+  //       return "Current Liability";
 
-      case "equity":
-        return "Owner Equity";
+  //     case "equity":
+  //       return "Owner Equity";
 
-      case "income":
-        return "Operating Income";
+  //     case "income":
+  //       return "Operating Income";
 
-      case "expense":
-        return "Operating Expense";
-    }
-  }
+  //     case "expense":
+  //       return "Operating Expense";
+  //   }
+  // }
 }
 
 export default new AccountService();

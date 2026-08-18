@@ -4,57 +4,55 @@ import JournalEntryLine from "../../models/journalEntryLine.model";
 
 class LedgerRepository {
   /**
-   * Get all journal lines belonging to one account,
-   * ordered by the actual accounting entry date.
+   * Get journal lines for one account.
+   *
+   * The JournalEntryLine does not contain userId,
+   * so user/date filtering is performed through
+   * the populated JournalEntry.
    */
-  async findByAccountId(accountId: mongoose.Types.ObjectId) {
-    return await JournalEntryLine.aggregate([
-      // 1. Get journal lines for this account
-      {
-        $match: {
-          accountId,
-        },
-      },
+  async findByAccountId(
+    userId: mongoose.Types.ObjectId,
+    accountId: mongoose.Types.ObjectId,
+    from?: Date,
+    to?: Date,
+  ) {
+    const journalEntryFilter: any = {
+      userId,
+    };
 
-      // 2. Join JournalEntry
-      {
-        $lookup: {
-          from: "journalentries",
-          localField: "journalEntryId",
-          foreignField: "_id",
-          as: "journalEntry",
-        },
-      },
+    if (from || to) {
+      journalEntryFilter.entryDate = {};
 
-      // 3. Convert journalEntry array to object
-      {
-        $unwind: "$journalEntry",
-      },
+      if (from) {
+        journalEntryFilter.entryDate.$gte = from;
+      }
 
-      // 4. Sort by actual accounting date
-      {
-        $sort: {
-          "journalEntry.entryDate": 1,
-          _id: 1,
-        },
-      },
+      if (to) {
+        journalEntryFilter.entryDate.$lte = to;
+      }
+    }
 
-      // 5. Return only what LedgerService needs
-      {
-        $project: {
-          _id: 1,
-          journalEntryId: {
-            _id: "$journalEntry._id",
-            transactionId: "$journalEntry.transactionId",
-            entryDate: "$journalEntry.entryDate",
-            description: "$journalEntry.description",
-          },
-          accountId: 1,
-          debit: 1,
-          credit: 1,
-        },
+    const journalEntries = await mongoose
+      .model("JournalEntry")
+      .find(journalEntryFilter)
+      .select("_id entryDate description transactionId")
+      .sort({
+        entryDate: 1,
+        _id: 1,
+      });
+
+    const journalEntryIds = journalEntries.map((entry) => entry._id);
+
+    return await JournalEntryLine.find({
+      accountId,
+
+      journalEntryId: {
+        $in: journalEntryIds,
       },
-    ]);
+    }).populate({
+      path: "journalEntryId",
+      select: "entryDate description transactionId",
+    });
   }
 }
 

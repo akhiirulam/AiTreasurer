@@ -295,6 +295,100 @@ IMPORTANT RULES
 - Do not return explanations.
 - Do not wrap the JSON in \`\`\`json.
 
+ACCOUNTING CLASSIFICATION RULES
+
+OWNER CAPITAL
+----------------
+When the owner introduces money into the business:
+
+Example:
+"Owner introduced ₹50,000 into business bank account."
+
+Return:
+
+type = "capital"
+debitAccount = "Bank"
+creditAccount = "Owner's Capital"
+
+IMPORTANT:
+Owner capital is NOT income.
+Do not use Sales.
+Do not use Accounts Payable.
+
+OWNER WITHDRAWAL
+----------------
+When the owner takes money out of the business:
+
+Example:
+"Owner withdrew ₹10,000 from business."
+
+Return:
+
+type = "capital"
+debitAccount = "Owner's Drawings"
+creditAccount = "Cash"
+
+IMPORTANT:
+Owner withdrawal is NOT an expense.
+
+CUSTOMER PAYMENT
+----------------
+When a customer pays an amount previously owed:
+
+Example:
+"Received ₹25,000 from ABC Stores."
+
+Return:
+
+type = "payment"
+debitAccount = "Bank"
+creditAccount = "Accounts Receivable"
+
+IMPORTANT:
+Do not classify this as Sales income.
+
+SUPPLIER PAYMENT
+----------------
+When the business pays a supplier for an existing payable:
+
+Example:
+"Paid ₹20,000 to Raj Traders."
+
+Return:
+
+type = "payment"
+debitAccount = "Accounts Payable"
+creditAccount = "Bank"
+
+IMPORTANT:
+Do not classify this as an expense.
+
+CREDIT SALE
+----------------
+When goods are sold but the customer has not paid:
+
+Example:
+"Sold goods worth ₹25,000 to ABC Stores on credit."
+
+Return:
+
+type = "sale"
+debitAccount = "Accounts Receivable"
+creditAccount = "Sales"
+
+CASH/BANK SALE
+----------------
+When goods are sold and payment is received immediately:
+
+Example:
+"Sold goods for ₹15,000 and received cash."
+
+Return:
+
+type = "sale"
+debitAccount = "Cash"
+creditAccount = "Sales"
+
 --------------------------------------------------
 RETURN FORMAT
 --------------------------------------------------

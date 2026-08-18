@@ -12,9 +12,9 @@ class TrialBalanceService {
       to,
     );
 
-    // ==========================================
-    // GROUP JOURNAL LINES BY ACCOUNT
-    // ==========================================
+    // ==================================================
+    // 1. GROUP JOURNAL LINES BY ACCOUNT
+    // ==================================================
 
     const accountMap = new Map<
       string,
@@ -45,31 +45,74 @@ class TrialBalanceService {
       const account = accountMap.get(accountId)!;
 
       account.debit += line.debit ?? 0;
-
       account.credit += line.credit ?? 0;
     }
 
-    // ==========================================
-    // CREATE TRIAL BALANCE
-    // ==========================================
+    // ==================================================
+    // 2. CALCULATE NET TRIAL BALANCE
+    // ==================================================
 
-    const accounts = Array.from(accountMap.values()).map((account) => ({
-      accountId: account.accountId,
+    const accounts = Array.from(accountMap.values())
+      .map((account) => {
+        const debit = account.debit ?? 0;
 
-      accountName: account.accountName,
+        const credit = account.credit ?? 0;
 
-      accountCode: account.accountCode,
+        const netBalance = debit - credit;
 
-      accountType: account.accountType,
+        // ----------------------------------------------
+        // Debit balance
+        // ----------------------------------------------
 
-      debit: account.debit,
+        if (netBalance > 0) {
+          return {
+            accountId: account.accountId,
 
-      credit: account.credit,
-    }));
+            accountName: account.accountName,
 
-    // ==========================================
-    // TOTALS
-    // ==========================================
+            accountCode: account.accountCode,
+
+            accountType: account.accountType,
+
+            debit: netBalance,
+
+            credit: 0,
+          };
+        }
+
+        // ----------------------------------------------
+        // Credit balance
+        // ----------------------------------------------
+
+        if (netBalance < 0) {
+          return {
+            accountId: account.accountId,
+
+            accountName: account.accountName,
+
+            accountCode: account.accountCode,
+
+            accountType: account.accountType,
+
+            debit: 0,
+
+            credit: Math.abs(netBalance),
+          };
+        }
+
+        // ----------------------------------------------
+        // Zero balance
+        // ----------------------------------------------
+
+        return null;
+      })
+      .filter(
+        (account): account is NonNullable<typeof account> => account !== null,
+      );
+
+    // ==================================================
+    // 3. TOTALS
+    // ==================================================
 
     const totalDebit = accounts.reduce(
       (total, account) => total + account.debit,
@@ -80,6 +123,10 @@ class TrialBalanceService {
       (total, account) => total + account.credit,
       0,
     );
+
+    // ==================================================
+    // 4. RESULT
+    // ==================================================
 
     return {
       accounts,
