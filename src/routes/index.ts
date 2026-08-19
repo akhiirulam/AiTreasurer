@@ -20,7 +20,7 @@ const router = express.Router();
 router.use("/auth", authRouter);
 router.use("/transaction", transactionRouter);
 router.use("/accounts", accountRouter);
-router.use("/accounts", accountTemplateRouter);
+router.use("/accountTemplate", accountTemplateRouter);
 router.use("/journal", journalrouter);
 router.use("/ledger", ledgerRouter);
 router.use("/trial-balance", trialBalanceRouter);

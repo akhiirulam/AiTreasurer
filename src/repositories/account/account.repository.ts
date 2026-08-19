@@ -78,11 +78,15 @@ class AccountRepository {
   }
 
   async findAllByUser(userId: string): Promise<IAccount[]> {
-    return await Account.find({
-      userId: new mongoose.Types.ObjectId(userId),
+    const objectId = new mongoose.Types.ObjectId(userId);
+
+    const accounts = await Account.find({
+      userId: objectId,
     }).sort({
       code: 1,
     });
+
+    return accounts;
   }
 
   async findByType(userId: string, type: AccountType): Promise<IAccount[]> {

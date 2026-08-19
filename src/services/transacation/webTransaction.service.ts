@@ -49,7 +49,10 @@ class TransactionService {
 
         let supplierId: mongoose.Types.ObjectId | null = null;
 
-        if (parsedTransaction.supplierName) {
+        if (
+          parsedTransaction.supplierName &&
+          ["purchase", "payment"].includes(parsedTransaction.type)
+        ) {
           const supplier = await supplierRepository.findOrCreate(
             userId,
             parsedTransaction.supplierName,
@@ -65,6 +68,7 @@ class TransactionService {
         const debitAccount = await accountService.getOrCreateAccount(
           userId,
           parsedTransaction.debitAccount,
+          parsedTransaction.debitAccountType,
         );
 
         if (!debitAccount) {
@@ -80,6 +84,7 @@ class TransactionService {
         const creditAccount = await accountService.getOrCreateAccount(
           userId,
           parsedTransaction.creditAccount,
+          parsedTransaction.creditAccountType,
         );
 
         if (!creditAccount) {

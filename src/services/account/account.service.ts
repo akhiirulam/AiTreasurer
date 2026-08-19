@@ -4,8 +4,6 @@ import accountTemplateRepository from "../../repositories/account/accountTemplat
 
 import { AccountType } from "../../models/account.model";
 
-import { AccountTemplateType } from "../../models/accountTemplate.model";
-
 class AccountService {
   /**
    * Get or create a user-specific account
@@ -30,42 +28,57 @@ class AccountService {
       throw new Error("Account name is required");
     }
 
-    // -----------------------------------------
-    // 1. Find GLOBAL account template
-    // -----------------------------------------
+    // ==========================================
+    // 1. FIND GLOBAL TEMPLATE
+    // ==========================================
 
-    const template = await accountTemplateRepository.findByName(normalizedName);
-
-    console.log("Account name:", normalizedName);
-    console.log("Account template:", template);
+    let template = await accountTemplateRepository.findByName(normalizedName);
 
     // -----------------------------------------
     // 2. Template MUST exist
     // -----------------------------------------
 
     if (!template) {
-      throw new Error(`Account template "${normalizedName}" not found`);
+      // AI must provide account type
+      if (!accountType) {
+        throw new Error(
+          `Account template "${normalizedName}" not found and account type was not provided`,
+        );
+      }
+
+      console.log(`Account template "${normalizedName}" not found.`);
+
+      console.log(`Creating new global template as "${accountType}"...`);
+      // -----------------------------------------
+      // 3. CREATE GLOBAL TEMPLATE
+      // -----------------------------------------
+
+      template = await accountTemplateRepository.createFromAccountName(
+        normalizedName,
+        accountType,
+      );
     }
 
-    // -----------------------------------------
-    // 3. Template is the source of truth
-    // -----------------------------------------
+    // ==========================================
+    // 4. TEMPLATE IS SOURCE OF TRUTH
+    // ==========================================
 
     const resolvedAccountType = template.type;
 
-    console.log("Resolved account type:", resolvedAccountType);
-
     // -----------------------------------------
-    // 4. Check user's existing account
+    // 5. Check user's existing account
     // -----------------------------------------
-
-    let account = await accountRepository.findByName(userId, template.name);
+    let account = await accountRepository.findByTemplate(
+      userId,
+      template._id.toString(),
+    );
 
     if (account) {
       return account;
     }
+
     // -----------------------------------------
-    // 5. Create user's account
+    // 6. Create user's account
     // -----------------------------------------
 
     account = await accountRepository.create({
@@ -88,56 +101,6 @@ class AccountService {
 
     return account;
   }
-  /**
-   * Used during transaction processing when
-   * Gemini discovers an account that doesn't
-   * exist in the global templates.
-   *
-   * It creates the GLOBAL template first,
-   * then creates the user's account.
-   */
-
-  // private getTemplateMetadata(type: AccountType) {
-  //   switch (type) {
-  //     case "asset":
-  //       return {
-  //         category: "Asset",
-  //         subCategory: "Current Asset",
-  //         normalBalance: "debit",
-  //       };
-
-  //     case "liability":
-  //       return {
-  //         category: "Liability",
-  //         subCategory: "Current Liability",
-  //         normalBalance: "credit",
-  //       };
-
-  //     case "equity":
-  //       return {
-  //         category: "Equity",
-  //         subCategory: "Owner's Equity",
-  //         normalBalance: "credit",
-  //       };
-
-  //     case "income":
-  //       return {
-  //         category: "Income",
-  //         subCategory: "Operating Income",
-  //         normalBalance: "credit",
-  //       };
-
-  //     case "expense":
-  //       return {
-  //         category: "Expense",
-  //         subCategory: "Operating Expense",
-  //         normalBalance: "debit",
-  //       };
-
-  //     default:
-  //       throw new Error(`Unsupported account type: ${type}`);
-  //   }
-  // }
 
   async getOrCreateFromTemplate(userId: string, templateName: string) {
     return await this.getOrCreateAccount(userId, templateName);
@@ -230,88 +193,6 @@ class AccountService {
 
     return await accountRepository.delete(userId, accountId);
   }
-
-  /**
-   * Generate information required to create
-   * a new GLOBAL account template.
-   */
-  // private buildTemplateData(name: string, type: AccountType) {
-  //   const baseCode = this.getTemplateBaseCode(type);
-
-  //   const normalBalance = this.getNormalBalance(type);
-
-  //   return {
-  //     name,
-
-  //     code: `${baseCode}${Date.now().toString().slice(-3)}`,
-
-  //     type: type as AccountTemplateType,
-
-  //     description: `${name} account`,
-
-  //     category: type,
-
-  //     subCategory: this.getSubCategory(type),
-
-  //     normalBalance,
-
-  //     isActive: true,
-  //   };
-  // }
-
-  // private getTemplateBaseCode(type: AccountType): number {
-  //   switch (type) {
-  //     case "asset":
-  //       return 1000;
-
-  //     case "liability":
-  //       return 2000;
-
-  //     case "equity":
-  //       return 3000;
-
-  //     case "income":
-  //       return 4000;
-
-  //     case "expense":
-  //       return 6000;
-
-  //     default:
-  //       return 9000;
-  //   }
-  // }
-
-  // private getNormalBalance(type: AccountType): "debit" | "credit" {
-  //   switch (type) {
-  //     case "asset":
-  //     case "expense":
-  //       return "debit";
-
-  //     case "liability":
-  //     case "equity":
-  //     case "income":
-  //       return "credit";
-  //   }
-  // }
-
-  // private getSubCategory(type: AccountType): string {
-  //   switch (type) {
-  //     case "asset":
-  //       return "Current Asset";
-
-  //     case "liability":
-  //       return "Current Liability";
-
-  //     case "equity":
-  //       return "Owner Equity";
-
-  //     case "income":
-  //       return "Operating Income";
-
-  //     case "expense":
-  //       return "Operating Expense";
-  //   }
-  // }
 }
 
 export default new AccountService();

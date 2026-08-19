@@ -113,16 +113,16 @@ export const createFromTemplate = async (
 /**
  * Get all accounts belonging to the authenticated user.
  */
-export const getAccounts = async (req: AuthenticatedRequest, res: Response) => {
+export const getAccounts = async (req: Request, res: Response) => {
   try {
-    const userId = req.userId;
+    const userId = req.query.userId;
 
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
+    // if (!userId) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: "Unauthorized",
+    //   });
+    // }
 
     const accounts = await accountService.getAccounts(userId);
 

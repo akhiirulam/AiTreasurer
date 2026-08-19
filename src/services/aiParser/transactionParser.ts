@@ -162,7 +162,10 @@ For EACH transaction identify:
    - Must be a number.
 
 11. debitAccount
-   - Select ONLY from this list:
+
+   Identify the account that should be debited.
+
+   For EXISTING common accounts, prefer these names:
 
    - Cash
    - Bank
@@ -177,10 +180,39 @@ For EACH transaction identify:
    - Transportation Expense
    - Office Supplies Expense
    - Raw Materials
-   - Other Expense
+   - Owner's Capital
+   - Owner's Drawings
 
-12. creditAccount
-   - Select ONLY from this list:
+   If the transaction clearly requires an account that is NOT in this list,
+   you MAY create a meaningful accounting account name.
+
+   Examples:
+   - Advertisement Expense
+   - Insurance Expense
+   - Repairs Expense
+   - Delivery Expense
+   - Software Expense
+
+   Do not use vague names such as "Other Account" when a specific account
+   can be identified.
+
+12. debitAccountType
+
+   Return the accounting type of debitAccount.
+
+   Allowed values ONLY:
+
+   - asset
+   - liability
+   - equity
+   - income
+   - expense
+
+13. creditAccount
+
+   Identify the account that should be credited.
+
+   For EXISTING common accounts, prefer these names:
 
    - Cash
    - Bank
@@ -196,7 +228,23 @@ For EACH transaction identify:
    - Transportation Expense
    - Office Supplies Expense
    - Raw Materials
-   - Other Expense
+   - Owner's Capital
+   - Owner's Drawings
+
+   If the transaction clearly requires an account that is NOT in this list,
+   you MAY create a meaningful accounting account name.
+
+14. creditAccountType
+
+   Return the accounting type of creditAccount.
+
+   Allowed values ONLY:
+
+   - asset
+   - liability
+   - equity
+   - income
+   - expense
 
 --------------------------------------------------
 ACCOUNTING RULES
@@ -272,6 +320,50 @@ transactions[1].category = "Internet"
 Incorrect:
 
 transactions[0].amount = 5000
+
+--------------------------------------------------
+SUPPLIER NAME RULES
+--------------------------------------------------
+
+Return the supplier's actual business/person name ONLY when the
+transaction explicitly involves purchasing goods/services from a supplier.
+
+Examples:
+
+"Bought goods from Raj Traders for ₹20,000"
+→ supplierName: "Raj Traders"
+
+"Purchased stationery from ABC Office Supplies"
+→ supplierName: "ABC Office Supplies"
+
+For expenses where the name refers to:
+- an advertising platform
+- a utility
+- a service/category
+- an account
+- a payment method
+- a product
+- a brand/platform
+
+DO NOT treat it as a supplier unless the text clearly indicates
+that the entity is the supplier.
+
+Examples:
+
+"Paid ₹5,000 for Instagram advertising from bank"
+→ supplierName: null
+
+"Paid Google Ads ₹3,000"
+→ supplierName: null
+
+"Paid electricity bill ₹2,000"
+→ supplierName: null
+
+"Paid shop rent ₹8,000"
+→ supplierName: null
+
+"Bought goods from Raj Traders for ₹20,000"
+→ supplierName: "Raj Traders"
 
 --------------------------------------------------
 IMPORTANT RULES
@@ -389,6 +481,7 @@ type = "sale"
 debitAccount = "Cash"
 creditAccount = "Sales"
 
+
 --------------------------------------------------
 RETURN FORMAT
 --------------------------------------------------
@@ -414,8 +507,6 @@ Return exactly this structure:
   ]
 }
 `;
-
-    console.log("Gemini API key loaded:", Boolean(process.env.GEMINI_API_KEY));
 
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
@@ -443,18 +534,33 @@ Return exactly this structure:
     }
 
     for (const transaction of parsed.transactions) {
-      if (!transaction.type) {
-        throw new Error("Invalid transaction: type missing");
+      const validAccountTypes: AccountType[] = [
+        "asset",
+        "liability",
+        "equity",
+        "income",
+        "expense",
+      ];
+
+      if (!transaction.debitAccount) {
+        throw new Error("Invalid transaction: debitAccount missing");
       }
 
-      if (typeof transaction.amount !== "number") {
-        throw new Error("Invalid transaction: amount must be a number");
+      if (!validAccountTypes.includes(transaction.debitAccountType)) {
+        throw new Error(
+          `Invalid debit account type: ${transaction.debitAccountType}`,
+        );
       }
 
-      if (!transaction.description) {
-        throw new Error("Invalid transaction: description missing");
+      if (!transaction.creditAccount) {
+        throw new Error("Invalid transaction: creditAccount missing");
       }
 
+      if (!validAccountTypes.includes(transaction.creditAccountType)) {
+        throw new Error(
+          `Invalid credit account type: ${transaction.creditAccountType}`,
+        );
+      }
       if (!transaction.transactionDate) {
         throw new Error("Invalid transaction: transactionDate missing");
       }

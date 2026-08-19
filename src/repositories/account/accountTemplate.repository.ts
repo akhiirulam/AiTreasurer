@@ -177,43 +177,44 @@ class AccountTemplateRepository {
   /**
    * Generate the next global template code.
    */
-  async generateNextCode(
-    type: "asset" | "liability" | "equity" | "income" | "expense",
-  ): Promise<string> {
+  async generateNextCode(type: AccountTemplateType): Promise<string> {
+    const prefixMap: Record<AccountTemplateType, string> = {
+      asset: "AST",
+      liability: "LIA",
+      equity: "EQT",
+      income: "INC",
+      expense: "EXP",
+    };
+
+    const prefix = prefixMap[type];
+
     const templates = await AccountTemplate.find({
       type,
       isActive: true,
+      code: {
+        $regex: `^${prefix}-\\d+$`,
+      },
     })
       .sort({ code: -1 })
       .limit(1)
       .lean();
 
+    // No existing template for this type
     if (!templates.length) {
-      switch (type) {
-        case "asset":
-          return "1000";
-
-        case "liability":
-          return "2000";
-
-        case "equity":
-          return "3000";
-
-        case "income":
-          return "4000";
-
-        case "expense":
-          return "6000";
-      }
+      return `${prefix}-001`;
     }
 
-    const lastCode = Number(templates[0].code);
+    const lastCode = templates[0].code;
 
-    if (Number.isNaN(lastCode)) {
-      throw new Error(`Invalid account template code: ${templates[0].code}`);
+    const match = lastCode.match(new RegExp(`^${prefix}-(\\d+)$`));
+
+    if (!match) {
+      throw new Error(`Invalid account template code: ${lastCode}`);
     }
 
-    return String(lastCode + 10);
+    const nextNumber = Number(match[1]) + 1;
+
+    return `${prefix}-${String(nextNumber).padStart(3, "0")}`;
   }
 
   /**
@@ -221,6 +222,75 @@ class AccountTemplateRepository {
    */
   private escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  async createFromAccountName(name: string, type: AccountTemplateType) {
+    const normalizedName = name.trim();
+
+    const existing = await this.findByName(normalizedName);
+
+    if (existing) {
+      return existing;
+    }
+
+    const code = await this.generateNextCode(type);
+
+    const normalBalance: "debit" | "credit" =
+      type === "asset" || type === "expense" ? "debit" : "credit";
+
+    const category = this.getDefaultCategory(type);
+
+    const subCategory = this.getDefaultSubCategory(type);
+
+    return await this.create({
+      code,
+      name: normalizedName,
+      type,
+      category,
+      subCategory,
+      normalBalance,
+      description: `${normalizedName} account`,
+      isSystem: true,
+      isActive: true,
+    });
+  }
+
+  private getDefaultCategory(type: AccountTemplateType): string {
+    switch (type) {
+      case "asset":
+        return "current_asset";
+
+      case "liability":
+        return "current_liability";
+
+      case "equity":
+        return "owner_equity";
+
+      case "income":
+        return "operating_income";
+
+      case "expense":
+        return "operating_expense";
+    }
+  }
+
+  private getDefaultSubCategory(type: AccountTemplateType): string {
+    switch (type) {
+      case "asset":
+        return "other_assets";
+
+      case "liability":
+        return "other_liabilities";
+
+      case "equity":
+        return "other_equity";
+
+      case "income":
+        return "other";
+
+      case "expense":
+        return "miscellaneous";
+    }
   }
 }
 
