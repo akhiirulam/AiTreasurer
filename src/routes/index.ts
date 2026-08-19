@@ -9,6 +9,9 @@ import profitLossRouter from "./profitLoss.routes";
 import accountTemplateRouter from "./accountTemplate.routes";
 import balanceSheetRouter from "./balanceSheet.routes";
 import cashBookRouter from "./cashBook.routes";
+import accountsReceivableRouter from "./accountsReceivable.routes";
+import accountsPayableRouter from "./accountsPayable.routes";
+import salesRouter from "./sales.routes";
 
 const router = express.Router();
 
@@ -22,5 +25,8 @@ router.use("/trial-balance", trialBalanceRouter);
 router.use("/profit-loss", profitLossRouter);
 router.use("/balance-sheet", balanceSheetRouter);
 router.use("/cash-book", cashBookRouter);
+router.use("/accounts-receivable", accountsReceivableRouter);
+router.use("/accounts-payable", accountsPayableRouter);
+router.use("/sales", salesRouter);
 
 export default router;

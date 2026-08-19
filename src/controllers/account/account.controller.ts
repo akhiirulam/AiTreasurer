@@ -14,8 +14,6 @@ export const createAccount = async (
   try {
     const userId = req.userId;
 
-    console.log(userId);
-
     if (!userId) {
       return res.status(401).json({
         success: false,
