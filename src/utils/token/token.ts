@@ -1,17 +1,93 @@
-import jwt from "jsonwebtoken";
+import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 
-export const generateAccessToken = (userId: string) => {
-  const token = jwt.sign({ id: userId }, process.env.JWT_SECRET as string, {
-    expiresIn: "15m",
-  });
-  return token;
+interface AccessTokenPayload extends JwtPayload {
+  id: string;
+}
+
+interface RefreshTokenPayload extends JwtPayload {
+  id: string;
+}
+
+// =====================================================
+// ACCESS TOKEN
+// =====================================================
+
+export const generateAccessToken = (userId: string): string => {
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+
+  return jwt.sign(
+    {
+      id: userId,
+    },
+    secret,
+    {
+      expiresIn: "15m",
+    } as SignOptions,
+  );
 };
 
-export const generateRefreshToken = (userId: string) => {
-  const token = jwt.sign(
-    { id: userId },
-    process.env.JWT_REFRESH_SECRET as string,
-    { expiresIn: "7d" },
+// =====================================================
+// REFRESH TOKEN
+// =====================================================
+
+export const generateRefreshToken = (userId: string): string => {
+  const secret = process.env.JWT_REFRESH_SECRET;
+
+  if (!secret) {
+    throw new Error("JWT_REFRESH_SECRET is not configured");
+  }
+
+  return jwt.sign(
+    {
+      id: userId,
+    },
+    secret,
+    {
+      expiresIn: "7d",
+    } as SignOptions,
   );
-  return token;
+};
+
+// =====================================================
+// VERIFY ACCESS TOKEN
+// =====================================================
+
+export const verifyAccessToken = (token: string): AccessTokenPayload => {
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+
+  const decoded = jwt.verify(token, secret) as AccessTokenPayload;
+
+  if (!decoded.id) {
+    throw new Error("Invalid access token payload");
+  }
+
+  return decoded;
+};
+
+// =====================================================
+// VERIFY REFRESH TOKEN
+// =====================================================
+
+export const verifyRefreshToken = (token: string): RefreshTokenPayload => {
+  const secret = process.env.JWT_REFRESH_SECRET;
+
+  if (!secret) {
+    throw new Error("JWT_REFRESH_SECRET is not configured");
+  }
+
+  const decoded = jwt.verify(token, secret) as RefreshTokenPayload;
+
+  if (!decoded.id) {
+    throw new Error("Invalid refresh token payload");
+  }
+
+  return decoded;
 };

@@ -2,10 +2,24 @@ import { Request, Response, NextFunction } from "express";
 
 import balanceSheetService from "../../services/balanceSheet/balanceSheet.service";
 
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
+
 class BalanceSheetController {
-  async getBalanceSheet(req: Request, res: Response, next: NextFunction) {
+  async getBalanceSheet(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      const { userId, to } = req.query;
+      const userId = req.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized",
+        });
+      }
+      const { to } = req.query;
 
       // ----------------------------------------------
       // Validate userId

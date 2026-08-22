@@ -1,12 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 
 import trialBalanceService from "../../services/trialBalance/trialBalance.service";
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 
 class TrialBalanceController {
-  async getTrialBalance(req: Request, res: Response, next: NextFunction) {
+  async getTrialBalance(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      const { userId, from, to } = req.query;
-
+      const { from, to } = req.query;
+      const userId = req.userId;
       // ==========================================
       // 1. VALIDATE USER ID
       // ==========================================

@@ -1,11 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 
 import ledgerService from "../../services/ledger/ledger.service";
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 
 class LedgerController {
-  async getAccountLedger(req: Request, res: Response, next: NextFunction) {
+  async getAccountLedger(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
+    const userId = req.userId;
     try {
-      const { userId, accountId, from, to } = req.query;
+      const { accountId, from, to } = req.query;
 
       // ==========================================
       // 1. USER ID
@@ -18,28 +24,14 @@ class LedgerController {
         });
       }
 
-      if (Array.isArray(userId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid user ID",
-        });
-      }
-
       // ==========================================
       // 2. ACCOUNT ID
       // ==========================================
 
-      if (!accountId) {
+      if (typeof accountId !== "string") {
         return res.status(400).json({
           success: false,
           message: "Account ID is required",
-        });
-      }
-
-      if (Array.isArray(accountId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid account ID",
         });
       }
 

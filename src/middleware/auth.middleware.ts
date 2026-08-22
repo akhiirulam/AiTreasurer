@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../utils/token/token";
 
 export interface AuthenticatedRequest<
   Params = Record<string, string>,
@@ -47,32 +48,17 @@ const authenticate = (
 
     const token = parts[1];
 
-    // ==========================================
+    // ==================================================
     // 3. VERIFY ACCESS TOKEN
-    // ==========================================
+    // ==================================================
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string,
-    ) as AccessTokenPayload;
+    const decoded = verifyAccessToken(token);
 
-    // ==========================================
-    // 4. CHECK USER ID
-    // ==========================================
-
-    if (!decoded.id) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid access token",
-      });
-    }
-
-    // ==========================================
-    // 5. ATTACH USER ID TO REQUEST
-    // ==========================================
+    // ==================================================
+    // 4. ATTACH USER TO REQUEST
+    // ==================================================
 
     req.userId = decoded.id;
-
     // ==========================================
     // 6. CONTINUE
     // ==========================================

@@ -9,7 +9,6 @@ import {
   updateAccount,
   deleteAccount,
 } from "../controllers/account/account.controller";
-import authenticate from "../middleware/auth.middleware";
 
 const accountRouter = Router();
 
@@ -21,7 +20,7 @@ const accountRouter = Router();
 // accountRouter.put("/:accountId", authenticate, updateAccount);
 // accountRouter.delete("/:accountId", authenticate, deleteAccount);
 
-accountRouter.post("/", createAccount);
+accountRouter.post("/createAccount", createAccount);
 accountRouter.post("/from-template", createFromTemplate);
 accountRouter.get("/", getAccounts);
 accountRouter.get("/search", findByName);

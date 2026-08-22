@@ -21,6 +21,8 @@ class AccountService {
     userId: string,
     accountName: string,
     accountType?: AccountType,
+    category?: string,
+    subCategory?: string,
   ) {
     const normalizedName = accountName.trim();
 
@@ -46,17 +48,32 @@ class AccountService {
         );
       }
 
-      console.log(`Account template "${normalizedName}" not found.`);
+      if (!category || !subCategory) {
+        throw new Error(
+          `Account classification required to create template: ${normalizedName}`,
+        );
+      }
 
-      console.log(`Creating new global template as "${accountType}"...`);
+      const code =
+        await accountTemplateRepository.generateNextCode(accountType);
       // -----------------------------------------
       // 3. CREATE GLOBAL TEMPLATE
       // -----------------------------------------
 
-      template = await accountTemplateRepository.createFromAccountName(
-        normalizedName,
-        accountType,
-      );
+      template = await accountTemplateRepository.create({
+        code,
+        name: normalizedName,
+        type: accountType,
+        category,
+        subCategory,
+        normalBalance:
+          accountType === "asset" || accountType === "expense"
+            ? "debit"
+            : "credit",
+        description: null,
+        isSystem: true,
+        isActive: true,
+      });
     }
 
     // ==========================================

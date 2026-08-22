@@ -2,10 +2,24 @@ import { Request, Response, NextFunction } from "express";
 
 import accountsReceivableService from "../../services/accountsReceivable/accountsReceivable.service";
 
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
+
 class AccountsReceivableController {
-  async getAccountsReceivable(req: Request, res: Response, next: NextFunction) {
+  async getAccountsReceivable(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      const { userId, from, to } = req.query;
+      const userId = req.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized",
+        });
+      }
+      const { from, to } = req.query;
 
       // ==========================================
       // 1. VALIDATE USER ID

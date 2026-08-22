@@ -21,6 +21,8 @@ class AccountTemplateRepository {
       normalBalance: data.normalBalance,
 
       description: data.description ?? null,
+
+      isSystem: data.isSystem ?? true,
       isActive: data.isActive ?? true,
     });
 

@@ -1,43 +1,46 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 
 import transactionHistoryService from "../../services/transactionHistory/transactionHistory.service";
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 
 class TransactionHistoryController {
-  async getTransactions(req: Request, res: Response, next: NextFunction) {
+  async getTransactions(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      const { userId, search, type, paymentStatus, from, to, page, limit } =
-        req.query;
+      // ==========================================
+      // 1. AUTHENTICATED USER
+      // ==========================================
 
-      // ==========================================
-      // 1. USER ID
-      // ==========================================
+      const userId = req.userId;
 
       if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
-          message: "User ID is required",
-        });
-      }
-
-      if (Array.isArray(userId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid user ID",
+          message: "Unauthorized",
         });
       }
 
       // ==========================================
-      // 2. ARRAY VALIDATION
+      // 2. QUERY PARAMETERS
+      // ==========================================
+
+      const { search, type, paymentStatus, from, to, page, limit } = req.query;
+
+      // ==========================================
+      // 3. VALIDATE QUERY PARAMETERS
       // ==========================================
 
       if (
-        Array.isArray(search) ||
-        Array.isArray(type) ||
-        Array.isArray(paymentStatus) ||
-        Array.isArray(from) ||
-        Array.isArray(to) ||
-        Array.isArray(page) ||
-        Array.isArray(limit)
+        (search !== undefined && typeof search !== "string") ||
+        (type !== undefined && typeof type !== "string") ||
+        (paymentStatus !== undefined && typeof paymentStatus !== "string") ||
+        (from !== undefined && typeof from !== "string") ||
+        (to !== undefined && typeof to !== "string") ||
+        (page !== undefined && typeof page !== "string") ||
+        (limit !== undefined && typeof limit !== "string")
       ) {
         return res.status(400).json({
           success: false,
@@ -46,15 +49,17 @@ class TransactionHistoryController {
       }
 
       // ==========================================
-      // 3. DATE CONVERSION
+      // 4. DATE CONVERSION
       // ==========================================
 
-      const fromDate = from ? new Date(`${from}T00:00:00.000Z`) : undefined;
+      const fromDate =
+        from !== undefined ? new Date(`${from}T00:00:00.000Z`) : undefined;
 
-      const toDate = to ? new Date(`${to}T23:59:59.999Z`) : undefined;
+      const toDate =
+        to !== undefined ? new Date(`${to}T23:59:59.999Z`) : undefined;
 
       // ==========================================
-      // 4. DATE VALIDATION
+      // 5. DATE VALIDATION
       // ==========================================
 
       if (fromDate && isNaN(fromDate.getTime())) {
@@ -71,6 +76,17 @@ class TransactionHistoryController {
         });
       }
 
+      // ==========================================
+      // 6. DATE RANGE
+      // ==========================================
+
+      if (fromDate && toDate && fromDate > toDate) {
+        return res.status(400).json({
+          success: false,
+          message: "From date cannot be later than to date",
+        });
+      }
+
       if (fromDate && toDate && fromDate > toDate) {
         return res.status(400).json({
           success: false,
@@ -79,7 +95,43 @@ class TransactionHistoryController {
       }
 
       // ==========================================
-      // 5. GET TRANSACTIONS
+      // 7. PAGINATION
+      // ==========================================
+
+      const pageNumber = page !== undefined ? Number(page) : undefined;
+
+      const limitNumber = limit !== undefined ? Number(limit) : undefined;
+
+      // ==========================================
+      // 8. VALIDATE PAGE
+      // ==========================================
+
+      if (
+        pageNumber !== undefined &&
+        (!Number.isInteger(pageNumber) || pageNumber < 1)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid page",
+        });
+      }
+
+      // ==========================================
+      // 9. VALIDATE LIMIT
+      // ==========================================
+
+      if (
+        limitNumber !== undefined &&
+        (!Number.isInteger(limitNumber) || limitNumber < 1)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid limit",
+        });
+      }
+
+      // ==========================================
+      // 10. GET TRANSACTIONS
       // ==========================================
 
       const result = await transactionHistoryService.getTransactions(userId, {
@@ -88,12 +140,12 @@ class TransactionHistoryController {
         paymentStatus,
         from: fromDate,
         to: toDate,
-        page: page ? Number(page) : undefined,
-        limit: limit ? Number(limit) : undefined,
+        page: pageNumber,
+        limit: limitNumber,
       });
 
       // ==========================================
-      // 6. RESPONSE
+      // 11. RESPONSE
       // ==========================================
 
       return res.status(200).json({

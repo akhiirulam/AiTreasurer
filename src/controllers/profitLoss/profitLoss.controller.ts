@@ -1,11 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 
 import profitLossService from "../../services/profitLoss/profitLoss.service";
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 
 class ProfitLossController {
-  async getProfitLoss(req: Request, res: Response, next: NextFunction) {
+  async getProfitLoss(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      const { userId, from, to } = req.query;
+      const userId = req.userId;
+      const { from, to } = req.query;
 
       // ==========================================
       // VALIDATE USER ID

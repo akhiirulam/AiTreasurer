@@ -2,10 +2,24 @@ import { Request, Response, NextFunction } from "express";
 
 import accountsPayableService from "../../services/accountsPayable/accountsPayable.service";
 
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
+
 class AccountsPayableController {
-  async getAccountsPayable(req: Request, res: Response, next: NextFunction) {
+  async getAccountsPayable(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
-      const { userId, from, to } = req.query;
+      const userId = req.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized",
+        });
+      }
+      const { from, to } = req.query;
 
       // ==========================================
       // 1. VALIDATE USER ID

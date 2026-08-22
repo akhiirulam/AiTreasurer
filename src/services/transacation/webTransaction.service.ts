@@ -4,6 +4,7 @@ import transactionParserService from "../aiParser/transactionParser";
 import supplierRepository from "../../repositories/supplier/Supplier.repositories";
 import accountService from "../account/account.service";
 import journalEntryService from "../journalEntry/journalEntry.service";
+import customerService from "../customer/customer.service";
 
 interface CreateTransactionData {
   userId: string;
@@ -62,6 +63,27 @@ class TransactionService {
         }
 
         // ==================================================
+        // CUSTOMER
+        // ==================================================
+
+        let customerId: mongoose.Types.ObjectId | null = null;
+
+        if (parsedTransaction.customerName) {
+          if (!parsedTransaction.customerPhone) {
+            throw new Error(
+              `Customer phone number is required for ${parsedTransaction.customerName}`,
+            );
+          }
+
+          const customer = await customerService.findOrCreateCustomer(
+            userId,
+            parsedTransaction.customerName,
+            parsedTransaction.customerPhone,
+          );
+
+          customerId = customer._id;
+        }
+        // ==================================================
         // DEBIT ACCOUNT
         // ==================================================
 
@@ -69,6 +91,8 @@ class TransactionService {
           userId,
           parsedTransaction.debitAccount,
           parsedTransaction.debitAccountType,
+          parsedTransaction.debitAccountCategory,
+          parsedTransaction.debitAccountSubCategory,
         );
 
         if (!debitAccount) {
@@ -85,6 +109,8 @@ class TransactionService {
           userId,
           parsedTransaction.creditAccount,
           parsedTransaction.creditAccountType,
+          parsedTransaction.creditAccountCategory,
+          parsedTransaction.creditAccountSubCategory,
         );
 
         if (!creditAccount) {
@@ -112,7 +138,8 @@ class TransactionService {
             category: parsedTransaction.category,
 
             customer: parsedTransaction.customerName,
-
+            phone: parsedTransaction.customerPhone,
+            customerId,
             supplierId,
 
             transactionDate: new Date(parsedTransaction.transactionDate),

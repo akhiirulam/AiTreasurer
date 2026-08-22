@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 
 import salesService from "../../services/sales/sales.service";
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 
 class SalesController {
-  async getSales(req: Request, res: Response, next: NextFunction) {
+  async getSales(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { userId, from, to } = req.query;
+      const { from, to } = req.query;
+      const userId = req.userId;
 
       // ==========================================
       // 1. VALIDATE USER ID

@@ -14,6 +14,8 @@ export interface ITransaction extends Document {
   category: string | null;
 
   customer: string | null;
+  phone: string | null;
+  customerId: mongoose.Types.ObjectId | null;
 
   supplierId: mongoose.Types.ObjectId | null;
 
@@ -75,6 +77,17 @@ const transactionSchema = new Schema<ITransaction>(
     customer: {
       type: String,
       default: null,
+    },
+    phone: {
+      type: Number,
+      default: null,
+    },
+
+    customerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Customer",
+      default: null,
+      index: true,
     },
 
     supplierId: {
