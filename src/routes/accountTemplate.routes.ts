@@ -7,16 +7,17 @@ import {
   updateTemplate,
   deleteTemplate,
 } from "../controllers/account/accountTemplate.controller";
+import authenticate from "../middleware/auth.middleware";
 
 const accountTemplateRouter = Router();
-accountTemplateRouter.post("/", createTemplate);
+accountTemplateRouter.post("/", authenticate, createTemplate);
 
-accountTemplateRouter.get("/", getTemplates);
+accountTemplateRouter.get("/", authenticate, getTemplates);
 
-accountTemplateRouter.get("/:id", getTemplate);
+accountTemplateRouter.get("/:id", authenticate, getTemplate);
 
-accountTemplateRouter.put("/:id", updateTemplate);
+accountTemplateRouter.put("/:id", authenticate, updateTemplate);
 
-accountTemplateRouter.delete("/:id", deleteTemplate);
+accountTemplateRouter.delete("/:id", authenticate, deleteTemplate);
 
 export default accountTemplateRouter;

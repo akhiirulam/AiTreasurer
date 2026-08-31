@@ -1,15 +1,17 @@
 import { Request, Response } from "express";
 
 import transactionService from "../../services/transacation/webTransaction.service";
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
 
 export const createWebTransaction = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
 ): Promise<Response> => {
   try {
-    const { text, userId } = req.body;
+    const { text } = req.body;
+    const userId = req.userId;
 
-    console.log(text);
+    (console.log(text), userId);
 
     // Validate transaction text
     if (!text || !text.trim()) {

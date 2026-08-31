@@ -16,7 +16,7 @@ class TransactionService {
   async createTransaction(data: CreateTransactionData) {
     const { userId, text, file } = data;
 
-    console.log("Transaction text:", text);
+    console.log("Transaction :", text, userId);
 
     // ==================================================
     // START MONGODB TRANSACTION

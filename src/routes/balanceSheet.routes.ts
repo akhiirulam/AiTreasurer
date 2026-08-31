@@ -7,7 +7,7 @@ const balanceSheetRouter = Router();
 
 balanceSheetRouter.get(
   "/",
-
+  authenticate,
   balanceSheetController.getBalanceSheet,
 );
 

@@ -11,18 +11,22 @@ class AuthService {
    * the refresh token.
    */
   async refreshAccessToken(refreshToken: string) {
+    // ==================================================
+    // 1. CHECK REFRESH TOKEN
+    // ==================================================
+
     if (!refreshToken) {
       throw new Error("Refresh token is required");
     }
 
     // ==================================================
-    // VERIFY REFRESH TOKEN
+    // 2. VERIFY REFRESH TOKEN
     // ==================================================
 
     const decoded = verifyRefreshToken(refreshToken);
 
     // ==================================================
-    // FIND USER
+    // 3. FIND USER
     // ==================================================
 
     const user = await UserRegistration.findById(decoded.id);
@@ -32,7 +36,7 @@ class AuthService {
     }
 
     // ==================================================
-    // CHECK ACCOUNT STATUS
+    // 4. CHECK ACCOUNT STATUS
     // ==================================================
 
     if (user.accountStatus !== "active") {
@@ -40,10 +44,14 @@ class AuthService {
     }
 
     // ==================================================
-    // GENERATE NEW ACCESS TOKEN
+    // 5. GENERATE NEW ACCESS TOKEN
     // ==================================================
 
     const accessToken = generateAccessToken(user._id.toString());
+
+    // ==================================================
+    // 6. RETURN AUTH DATA
+    // ==================================================
 
     return {
       user: {

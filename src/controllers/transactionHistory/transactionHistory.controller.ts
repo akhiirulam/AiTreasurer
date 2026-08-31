@@ -16,6 +16,8 @@ class TransactionHistoryController {
 
       const userId = req.userId;
 
+      console.log("userId;", userId);
+
       if (!userId) {
         return res.status(401).json({
           success: false,
