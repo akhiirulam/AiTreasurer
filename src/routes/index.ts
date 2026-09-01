@@ -34,6 +34,8 @@ import transactionHistoryRouter from "./transactionHistory.routes";
 
 import customerRouter from "./customer.routes";
 
+import supplierRouter from "./supplier.routes";
+
 const router = express.Router();
 
 // =====================================================
@@ -77,5 +79,6 @@ router.use("/expenses", expenseRouter);
 router.use("/transactions/history", transactionHistoryRouter);
 
 router.use("/customers", customerRouter);
+router.use("/suppliers", supplierRouter);
 
 export default router;

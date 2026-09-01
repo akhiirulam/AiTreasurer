@@ -1,54 +1,56 @@
 import mongoose from "mongoose";
 import Supplier from "../../models/supplier.model";
+import Transaction from "../../models/transaction.model";
 
 class SupplierRepository {
   /**
-   * Find a supplier by name for a specific user/shop.
+   * Find supplier by name for a specific user/shop.
    */
   async findByName(userId: string, name: string) {
     return await Supplier.findOne({
       userId: new mongoose.Types.ObjectId(userId),
-      name: name.trim(),
+      name: {
+        $regex: `^${name.trim()}$`,
+        $options: "i",
+      },
     });
   }
 
   /**
-   * Find an existing supplier or create a new one.
+   * Find existing supplier or create a new one.
+   *
+   * Used by TransactionService.
    */
   async findOrCreate(userId: string, name: string) {
     const normalizedName = name.trim();
 
     let supplier = await this.findByName(userId, normalizedName);
 
+    // ==================================================
+    // EXISTING SUPPLIER
+    // ==================================================
+
     if (supplier) {
+      // Reactivate supplier if previously deactivated
+      if (!supplier.isActive) {
+        supplier.isActive = true;
+        await supplier.save();
+      }
+
       return supplier;
     }
+
+    // ==================================================
+    // CREATE SUPPLIER
+    // ==================================================
 
     supplier = await Supplier.create({
       userId: new mongoose.Types.ObjectId(userId),
       name: normalizedName,
+      isActive: true,
     });
 
     return supplier;
-  }
-
-  /**
-   * Create a supplier manually.
-   */
-  async create(
-    userId: string,
-    name: string,
-    phone?: string | null,
-    email?: string | null,
-    address?: string | null,
-  ) {
-    return await Supplier.create({
-      userId: new mongoose.Types.ObjectId(userId),
-      name: name.trim(),
-      phone: phone ?? null,
-      email: email ?? null,
-      address: address ?? null,
-    });
   }
 
   /**
@@ -79,6 +81,7 @@ class SupplierRepository {
       phone?: string | null;
       email?: string | null;
       address?: string | null;
+      isActive?: boolean;
     },
   ) {
     if (data.name) {
@@ -92,10 +95,32 @@ class SupplierRepository {
   }
 
   /**
-   * Delete supplier.
+   * Deactivate supplier.
+   *
+   * We do NOT physically delete suppliers because
+   * historical transactions may reference them.
    */
-  async delete(supplierId: string) {
-    return await Supplier.findByIdAndDelete(supplierId);
+  async deactivate(supplierId: string) {
+    return await Supplier.findByIdAndUpdate(
+      supplierId,
+      {
+        isActive: false,
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+  }
+  /**
+   * Find supplier transactions are linked to.
+   */
+  async findTransactionsBySupplier(supplierId: string) {
+    return await Transaction.find({
+      supplierId: new mongoose.Types.ObjectId(supplierId),
+    }).sort({
+      transactionDate: 1,
+    });
   }
 }
 
