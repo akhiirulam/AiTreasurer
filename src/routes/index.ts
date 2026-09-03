@@ -36,6 +36,10 @@ import customerRouter from "./customer.routes";
 
 import supplierRouter from "./supplier.routes";
 
+import purchaseRouter from "./purchase.routes";
+
+import reportsRouter from "./reports.routes";
+
 const router = express.Router();
 
 // =====================================================
@@ -80,5 +84,9 @@ router.use("/transactions/history", transactionHistoryRouter);
 
 router.use("/customers", customerRouter);
 router.use("/suppliers", supplierRouter);
+
+router.use("/purchases", purchaseRouter);
+
+router.use("/reports", reportsRouter);
 
 export default router;
