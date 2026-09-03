@@ -40,6 +40,8 @@ import purchaseRouter from "./purchase.routes";
 
 import reportsRouter from "./reports.routes";
 
+import dashboardRouter from "./dashboard.routes";
+
 const router = express.Router();
 
 // =====================================================
@@ -89,4 +91,5 @@ router.use("/purchases", purchaseRouter);
 
 router.use("/reports", reportsRouter);
 
+router.use("/dashboard", dashboardRouter);
 export default router;
