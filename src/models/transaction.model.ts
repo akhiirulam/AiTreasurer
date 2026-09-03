@@ -79,7 +79,7 @@ const transactionSchema = new Schema<ITransaction>(
       default: null,
     },
     phone: {
-      type: Number,
+      type: String,
       default: null,
     },
 

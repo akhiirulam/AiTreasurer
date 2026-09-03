@@ -95,8 +95,63 @@ class SalesRepository {
 
       type: "sale",
     }).select(
-      "_id customer amount description transactionDate paymentStatus paidAmount outstandingAmount",
+      "_id customer customerId amount description transactionDate paymentStatus paidAmount outstandingAmount",
     );
+  }
+
+  /**
+   * Get customer payment transactions.
+   *
+   * Example:
+   *
+   * Sale:
+   * Dr Accounts Receivable     ₹5,000
+   *     Cr Sales               ₹5,000
+   *
+   * Payment:
+   * Dr Cash                    ₹4,000
+   *     Cr Accounts Receivable ₹4,000
+   */
+  async findCustomerPayments(
+    userId: mongoose.Types.ObjectId,
+    customerIds: mongoose.Types.ObjectId[],
+    from?: Date,
+    to?: Date,
+  ) {
+    if (customerIds.length === 0) {
+      return [];
+    }
+
+    const dateFilter: any = {
+      userId,
+
+      type: "payment",
+
+      customerId: {
+        $in: customerIds,
+      },
+    };
+
+    if (from || to) {
+      dateFilter.transactionDate = {};
+
+      if (from) {
+        dateFilter.transactionDate.$gte = from;
+      }
+
+      if (to) {
+        dateFilter.transactionDate.$lte = to;
+      }
+    }
+
+    return await Transaction.find(dateFilter)
+      .select(
+        "_id customer customerId amount description transactionDate paymentStatus",
+      )
+      .sort({
+        transactionDate: 1,
+        createdAt: 1,
+      });
   }
 }
 

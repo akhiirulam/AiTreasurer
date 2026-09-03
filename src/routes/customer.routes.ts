@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import customerController from "../controllers/customers/customer.controller";
+import customerLedgerController from "../controllers/customers/customerLedger.controller";
 
 import authenticate from "../middleware/auth.middleware";
 
@@ -38,6 +39,12 @@ customerRouter.delete(
   "/:customerId",
   authenticate,
   customerController.deleteCustomer,
+);
+
+customerRouter.get(
+  "/:customerId/ledger",
+  authenticate,
+  customerLedgerController.getCustomerLedger,
 );
 
 export default customerRouter;

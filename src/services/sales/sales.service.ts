@@ -26,13 +26,9 @@ class SalesService {
           from: from ?? null,
           to: to ?? null,
         },
-
         sales: [],
-
         totalSales: 0,
-
         totalPaid: 0,
-
         totalOutstanding: 0,
       };
     }
@@ -49,17 +45,17 @@ class SalesService {
     );
 
     // ==========================================
-    // 4. GET TRANSACTION IDs
+    // 4. GET SALES TRANSACTION IDs
     // ==========================================
 
-    const transactionIds = lines.map((line: any) => {
-      const journalEntry = line.journalEntryId;
-
-      return journalEntry.transactionId;
-    });
+    const transactionIds = lines
+      .map((line: any) => {
+        return line.journalEntryId?.transactionId;
+      })
+      .filter(Boolean);
 
     // ==========================================
-    // 5. GET TRANSACTIONS
+    // 5. GET SALES TRANSACTIONS
     // ==========================================
 
     const transactions = await salesRepository.findTransactions(
@@ -77,10 +73,14 @@ class SalesService {
     // 6. BUILD SALES REPORT
     // ==========================================
 
-    const sales = [];
+    const sales: any[] = [];
 
     for (const line of lines as any[]) {
       const journalEntry = line.journalEntryId;
+
+      if (!journalEntry?.transactionId) {
+        continue;
+      }
 
       const transaction = transactionMap.get(
         journalEntry.transactionId.toString(),
@@ -94,25 +94,122 @@ class SalesService {
 
       sales.push({
         transactionId: transaction._id,
-
         date: journalEntry.entryDate,
-
         customer: transaction.customer ?? null,
-
+        customerId: transaction.customerId ?? null,
         description: journalEntry.description,
-
         amount,
-
         paymentStatus: transaction.paymentStatus,
-
-        paidAmount: transaction.paidAmount ?? 0,
-
-        outstandingAmount: transaction.outstandingAmount ?? 0,
+        paidAmount: 0,
+        outstandingAmount: amount,
       });
     }
 
     // ==========================================
-    // 7. TOTALS
+    // 7. FIND CUSTOMERS FROM SALES
+    // ==========================================
+
+    const customerIds = sales.map((sale) => sale.customerId).filter(Boolean);
+
+    const uniqueCustomerIds = Array.from(
+      new Map(
+        customerIds.map((id: mongoose.Types.ObjectId) => [id.toString(), id]),
+      ).values(),
+    );
+
+    // ==========================================
+    // 8. GET CUSTOMER PAYMENTS
+    // ==========================================
+
+    const payments = await salesRepository.findCustomerPayments(
+      userObjectId,
+      uniqueCustomerIds,
+      from,
+      to,
+    );
+
+    // ==========================================
+    // 9. GROUP SALES BY CUSTOMER
+    // ==========================================
+
+    const salesByCustomer = new Map<string, any[]>();
+
+    for (const sale of sales) {
+      if (!sale.customerId) {
+        continue;
+      }
+
+      const customerKey = sale.customerId.toString();
+
+      if (!salesByCustomer.has(customerKey)) {
+        salesByCustomer.set(customerKey, []);
+      }
+
+      salesByCustomer.get(customerKey)!.push(sale);
+    }
+
+    // ==========================================
+    // 10. APPLY CUSTOMER PAYMENTS
+    // ==========================================
+
+    for (const payment of payments) {
+      if (!payment.customerId) {
+        continue;
+      }
+
+      const customerKey = payment.customerId.toString();
+
+      const customerSales = salesByCustomer.get(customerKey);
+
+      if (!customerSales) {
+        continue;
+      }
+
+      let remainingPayment = payment.amount ?? 0;
+
+      // Apply payment to the oldest
+      // outstanding sale first.
+      for (const sale of customerSales) {
+        if (remainingPayment <= 0) {
+          break;
+        }
+
+        const outstanding = sale.amount - sale.paidAmount;
+
+        if (outstanding <= 0) {
+          continue;
+        }
+
+        const appliedAmount = Math.min(remainingPayment, outstanding);
+
+        sale.paidAmount += appliedAmount;
+
+        sale.outstandingAmount -= appliedAmount;
+
+        remainingPayment -= appliedAmount;
+      }
+    }
+
+    // ==========================================
+    // 11. DETERMINE PAYMENT STATUS
+    // ==========================================
+
+    for (const sale of sales) {
+      if (sale.paidAmount <= 0) {
+        sale.paidAmount = 0;
+        sale.outstandingAmount = sale.amount;
+        sale.paymentStatus = "unpaid";
+      } else if (sale.paidAmount >= sale.amount) {
+        sale.paidAmount = sale.amount;
+        sale.outstandingAmount = 0;
+        sale.paymentStatus = "paid";
+      } else {
+        sale.paymentStatus = "partial";
+      }
+    }
+
+    // ==========================================
+    // 12. CALCULATE TOTALS
     // ==========================================
 
     const totalSales = sales.reduce((total, sale) => total + sale.amount, 0);
@@ -125,7 +222,7 @@ class SalesService {
     );
 
     // ==========================================
-    // 8. RETURN REPORT
+    // 13. RETURN REPORT
     // ==========================================
 
     return {
@@ -136,9 +233,7 @@ class SalesService {
 
       account: {
         id: salesAccount._id,
-
         name: salesAccount.name,
-
         code: salesAccount.code,
       },
 

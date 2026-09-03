@@ -18,7 +18,7 @@ interface ParseTransactionData {
   file?: Express.Multer.File;
 }
 type ParsedTransaction = {
-  type: "income" | "expense" | "purchase" | "sale" | "payment";
+  type: "income" | "expense" | "purchase" | "sale" | "payment" | "capital";
   amount: number;
   description: string;
   category: string | null;

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 
 import salesService from "../../services/sales/sales.service";
 import { AuthenticatedRequest } from "../../middleware/auth.middleware";
@@ -14,9 +14,9 @@ class SalesController {
       // ==========================================
 
       if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
-          message: "User ID is required",
+          message: "Unauthorized",
         });
       }
 
