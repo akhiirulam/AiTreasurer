@@ -13,7 +13,7 @@ export interface IUserRegistration extends Document {
   isEmailVerified: boolean;
   isMobileVerified: boolean;
 
-  accountStatus: "active" | "suspended" | "deleted";
+  accountStatus: "active" | "inactive";
 
   profileImage?: string | null;
 
@@ -86,7 +86,7 @@ const userRegistrationSchema = new Schema<IUserRegistration>(
 
     accountStatus: {
       type: String,
-      enum: ["active", "suspended", "deleted"],
+      enum: ["active", "inactive"],
       default: "active",
     },
 

@@ -2,17 +2,19 @@ import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 
 interface AccessTokenPayload extends JwtPayload {
   id: string;
+  role: string;
 }
 
 interface RefreshTokenPayload extends JwtPayload {
   id: string;
+  role: string;
 }
 
 // =====================================================
 // ACCESS TOKEN
 // =====================================================
 
-export const generateAccessToken = (userId: string): string => {
+export const generateAccessToken = (userId: string, role: string): string => {
   const secret = process.env.JWT_SECRET;
 
   if (!secret) {
@@ -22,6 +24,7 @@ export const generateAccessToken = (userId: string): string => {
   return jwt.sign(
     {
       id: userId,
+      role,
     },
     secret,
     {
@@ -34,7 +37,7 @@ export const generateAccessToken = (userId: string): string => {
 // REFRESH TOKEN
 // =====================================================
 
-export const generateRefreshToken = (userId: string): string => {
+export const generateRefreshToken = (userId: string, role: string): string => {
   const secret = process.env.JWT_REFRESH_SECRET;
 
   if (!secret) {
@@ -44,6 +47,7 @@ export const generateRefreshToken = (userId: string): string => {
   return jwt.sign(
     {
       id: userId,
+      role,
     },
     secret,
     {
@@ -65,7 +69,7 @@ export const verifyAccessToken = (token: string): AccessTokenPayload => {
 
   const decoded = jwt.verify(token, secret) as AccessTokenPayload;
 
-  if (!decoded.id) {
+  if (!decoded.id || !decoded.role) {
     throw new Error("Invalid access token payload");
   }
 
@@ -85,7 +89,7 @@ export const verifyRefreshToken = (token: string): RefreshTokenPayload => {
 
   const decoded = jwt.verify(token, secret) as RefreshTokenPayload;
 
-  if (!decoded.id) {
+  if (!decoded.id || !decoded.role) {
     throw new Error("Invalid refresh token payload");
   }
 

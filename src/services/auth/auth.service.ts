@@ -47,7 +47,7 @@ class AuthService {
     // 5. GENERATE NEW ACCESS TOKEN
     // ==================================================
 
-    const accessToken = generateAccessToken(user._id.toString());
+    const accessToken = generateAccessToken(user._id.toString(), user.role);
 
     // ==================================================
     // 6. RETURN AUTH DATA

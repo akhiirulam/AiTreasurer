@@ -1,17 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+
 import { verifyAccessToken } from "../utils/token/token";
 
-export interface AuthenticatedRequest<
-  Params = Record<string, string>,
-  ResBody = any,
-  ReqBody = any,
-> extends Request<Params, any, ReqBody> {
+export interface AuthenticatedRequest extends Request {
   userId?: string;
-}
-
-interface AccessTokenPayload {
-  id: string;
+  userRole?: string;
 }
 
 const authenticate = (
@@ -48,19 +41,21 @@ const authenticate = (
 
     const token = parts[1];
 
-    // ==================================================
+    // ==========================================
     // 3. VERIFY ACCESS TOKEN
-    // ==================================================
+    // ==========================================
 
     const decoded = verifyAccessToken(token);
 
-    // ==================================================
-    // 4. ATTACH USER TO REQUEST
-    // ==================================================
+    // ==========================================
+    // 4. ATTACH USER DATA
+    // ==========================================
 
     req.userId = decoded.id;
+    req.userRole = decoded.role;
+
     // ==========================================
-    // 6. CONTINUE
+    // 5. CONTINUE
     // ==========================================
 
     next();

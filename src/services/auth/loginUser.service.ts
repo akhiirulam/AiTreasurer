@@ -25,9 +25,9 @@ class UserLoginService {
       throw new Error("Invalid email or password");
     }
 
-    const accessToken = generateAccessToken(user._id.toString());
+    const accessToken = generateAccessToken(user._id.toString(), user.role);
 
-    const refreshToken = generateRefreshToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString(), user.role);
 
     return { user, accessToken, refreshToken };
   }

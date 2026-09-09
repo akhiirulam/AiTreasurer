@@ -41,6 +41,7 @@ import purchaseRouter from "./purchase.routes";
 import reportsRouter from "./reports.routes";
 
 import dashboardRouter from "./dashboard.routes";
+import adminRouter from "./admin.routes";
 
 const router = express.Router();
 
@@ -92,4 +93,5 @@ router.use("/purchases", purchaseRouter);
 router.use("/reports", reportsRouter);
 
 router.use("/dashboard", dashboardRouter);
+router.use("/admin", adminRouter);
 export default router;
