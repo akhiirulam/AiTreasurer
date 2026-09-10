@@ -157,8 +157,7 @@ export const getAccount = async (req: AuthenticatedRequest, res: Response) => {
       });
     }
 
-    const { accountId } = req.params;
-
+    const accountId = String(req.params.accountId);
     if (!accountId) {
       return res.status(400).json({
         success: false,
@@ -253,7 +252,7 @@ export const updateAccount = async (
       });
     }
 
-    const { accountId } = req.params;
+    const accountId = String(req.params.accountId);
 
     if (!accountId) {
       return res.status(400).json({
@@ -310,7 +309,7 @@ export const deleteAccount = async (
       });
     }
 
-    const { accountId } = req.params;
+    const accountId = String(req.params.accountId);
 
     if (!accountId) {
       return res.status(400).json({

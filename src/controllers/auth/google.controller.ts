@@ -79,9 +79,9 @@ export const googleLogin = async (
     }
 
     // Generate your application's tokens
-    const accessToken = generateAccessToken(user._id.toString());
+    const accessToken = generateAccessToken(user._id.toString(), user.role);
 
-    const refreshToken = generateRefreshToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString(), user.role);
 
     // Store refresh token in HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
