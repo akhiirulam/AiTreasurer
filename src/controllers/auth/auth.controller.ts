@@ -3,8 +3,12 @@ import { Request, Response } from "express";
 import UserRegistrationService from "../../services/auth/userRegistration.service";
 import UserLoginService from "../../services/auth/loginUser.service";
 import AuthService from "../../services/auth/auth.service";
+import userPasswordService from "../../services/auth/userPassword.service";
 
 import asyncHandler from "../../utils/asyncHandler";
+import { AuthenticatedRequest } from "../../middleware/auth.middleware";
+
+import deleteAccountService from "../../services/auth/deleteAccount.service";
 
 // =====================================================
 // REGISTER
@@ -92,6 +96,89 @@ export const refreshAccessToken = asyncHandler(
     });
   },
 );
+// =====================================================
+// PASSWORD CHANGE
+// =====================================================
+
+export const changePassword = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    const result = await userPasswordService.changePassword({
+      userId,
+      currentPassword,
+      newPassword,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to change password";
+
+    res.status(400).json({
+      success: false,
+      message,
+    });
+  }
+};
+
+// =====================================================
+// DELETE ACCOUNT
+// =====================================================
+
+export const deleteAccount = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const { password, confirmation } = req.body;
+
+    const result = await deleteAccountService.deleteAccount({
+      userId,
+      password,
+      confirmation,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to delete account";
+
+    res.status(400).json({
+      success: false,
+      message,
+    });
+  }
+};
 
 // =====================================================
 // LOGOUT

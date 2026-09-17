@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 import UserRegistration, {
   IUserRegistration,
 } from "../../models/userRegistration.model";
@@ -23,6 +25,68 @@ class UserRegistrationRepository {
     const user = new UserRegistration(userData);
 
     return await user.save();
+  }
+
+  async softDeleteById(userId: string): Promise<IUserRegistration | null> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return null;
+    }
+
+    return await UserRegistration.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          accountStatus: "deleted",
+          deletedAt: new Date(),
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+  }
+  /**
+   * Find a user by ID including the password.
+   *
+   * Used when verifying the current password.
+   */
+  async findByIdWithPassword(
+    userId: string,
+  ): Promise<IUserRegistration | null> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return null;
+    }
+
+    return await UserRegistration.findById(userId).select("+password");
+  }
+
+  /**
+   * Update the user's password.
+   *
+   * The password must already be hashed
+   * before calling this method.
+   */
+  async updatePassword(
+    userId: string,
+    hashedPassword: string,
+  ): Promise<IUserRegistration | null> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return null;
+    }
+
+    return await UserRegistration.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          password: hashedPassword,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
   }
 }
 

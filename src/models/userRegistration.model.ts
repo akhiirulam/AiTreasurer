@@ -13,7 +13,8 @@ export interface IUserRegistration extends Document {
   isEmailVerified: boolean;
   isMobileVerified: boolean;
 
-  accountStatus: "active" | "inactive";
+  accountStatus: "active" | "inactive" | "deleted";
+  deletedAt?: Date | null;
 
   profileImage?: string | null;
 
@@ -92,6 +93,10 @@ const userRegistrationSchema = new Schema<IUserRegistration>(
 
     profileImage: {
       type: String,
+      default: null,
+    },
+    deletedAt: {
+      type: Date,
       default: null,
     },
   },
