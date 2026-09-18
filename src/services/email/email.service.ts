@@ -1,6 +1,9 @@
 import dns from "node:dns";
 import nodemailer from "nodemailer";
 
+import dotenv from "dotenv";
+dotenv.config();
+
 // Render may resolve smtp.gmail.com to IPv6.
 // Prefer IPv4 for SMTP connections.
 dns.setDefaultResultOrder("ipv4first");
