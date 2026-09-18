@@ -1,7 +1,9 @@
+import dns from "node:dns";
 import nodemailer from "nodemailer";
-import dotenv from "dotenv";
 
-dotenv.config();
+// Render may resolve smtp.gmail.com to IPv6.
+// Prefer IPv4 for SMTP connections.
+dns.setDefaultResultOrder("ipv4first");
 
 const smtpPort = Number(process.env.SMTP_PORT || 587);
 
@@ -14,6 +16,10 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
   },
+
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 20000,
 });
 
 class EmailService {
