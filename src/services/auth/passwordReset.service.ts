@@ -3,6 +3,9 @@ import passwordResetRepository from "../../repositories/auth/passwordReset.repos
 import userRegistrationRepository from "../../repositories/auth/userRegistration.repository";
 import emailService from "../email/email.service";
 
+import dotenv from "dotenv";
+dotenv.config();
+
 class PasswordResetService {
   /**
    * Request a password reset.
