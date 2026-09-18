@@ -16,12 +16,15 @@ import deleteAccountService from "../../services/auth/deleteAccount.service";
 
 export const userRegistration = asyncHandler(
   async (req: Request, res: Response) => {
-    const user = await UserRegistrationService.registerUser(req.body);
+    const result = await UserRegistrationService.registerUser(req.body);
 
     return res.status(201).json({
       success: true,
-      message: "User registered successfully",
-      data: user,
+      message: result.message,
+
+      data: {
+        user: result.user,
+      },
     });
   },
 );
@@ -61,6 +64,7 @@ export const userLogin = asyncHandler(async (req: Request, res: Response) => {
         email: result.user.email,
         role: result.user.role,
         profileImage: result.user.profileImage,
+        isEmailVerified: result.user.isEmailVerified,
       },
 
       accessToken: result.accessToken,
@@ -96,6 +100,7 @@ export const refreshAccessToken = asyncHandler(
     });
   },
 );
+
 // =====================================================
 // PASSWORD CHANGE
 // =====================================================

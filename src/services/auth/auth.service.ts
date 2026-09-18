@@ -1,56 +1,54 @@
-import UserRegistration from "../../models/userRegistration.model";
-
 import {
   generateAccessToken,
   verifyRefreshToken,
 } from "../../utils/token/token";
 
+import userRegistrationRepository from "../../repositories/auth/userRegistration.repository";
+
 class AuthService {
-  /**
-   * Generate a new access token using
-   * the refresh token.
-   */
   async refreshAccessToken(refreshToken: string) {
     // ==================================================
-    // 1. CHECK REFRESH TOKEN
-    // ==================================================
-
-    if (!refreshToken) {
-      throw new Error("Refresh token is required");
-    }
-
-    // ==================================================
-    // 2. VERIFY REFRESH TOKEN
+    // 1. Verify refresh token
     // ==================================================
 
     const decoded = verifyRefreshToken(refreshToken);
 
+    const userId = decoded.id;
+
+    if (!userId) {
+      throw new Error("Invalid refresh token");
+    }
+
     // ==================================================
-    // 3. FIND USER
+    // 2. Find current user
     // ==================================================
 
-    const user = await UserRegistration.findById(decoded.id);
+    const user = await userRegistrationRepository.findById(userId);
 
     if (!user) {
       throw new Error("User not found");
     }
 
     // ==================================================
-    // 4. CHECK ACCOUNT STATUS
+    // 3. Check account status
     // ==================================================
 
-    if (user.accountStatus !== "active") {
-      throw new Error("Your account is not active");
+    if (user.accountStatus === "deleted") {
+      throw new Error("This account has been deleted");
+    }
+
+    if (user.accountStatus === "inactive") {
+      throw new Error("This account is inactive");
     }
 
     // ==================================================
-    // 5. GENERATE NEW ACCESS TOKEN
+    // 4. Generate new access token
     // ==================================================
 
     const accessToken = generateAccessToken(user._id.toString(), user.role);
 
     // ==================================================
-    // 6. RETURN AUTH DATA
+    // 5. Return current user + access token
     // ==================================================
 
     return {
@@ -60,8 +58,8 @@ class AuthService {
         email: user.email,
         role: user.role,
         profileImage: user.profileImage,
+        isEmailVerified: user.isEmailVerified,
       },
-
       accessToken,
     };
   }

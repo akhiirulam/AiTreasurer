@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 
 import userRegistrationRepository from "../../repositories/auth/userRegistration.repository";
+import emailVerificationService from "./emailVerification.service";
 
 interface RegisterUserData {
   fullName: string;
@@ -16,7 +17,10 @@ class UserRegistrationService {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // ==================================================
     // 1. Check email
+    // ==================================================
+
     const existingEmail =
       await userRegistrationRepository.findByEmail(normalizedEmail);
 
@@ -24,7 +28,10 @@ class UserRegistrationService {
       throw new Error("Email is already registered");
     }
 
+    // ==================================================
     // 2. Check mobile number
+    // ==================================================
+
     const existingMobile =
       await userRegistrationRepository.findByMobileNumber(mobileNumber);
 
@@ -32,10 +39,16 @@ class UserRegistrationService {
       throw new Error("Mobile number is already registered");
     }
 
+    // ==================================================
     // 3. Hash password
+    // ==================================================
+
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 4. Create shopkeeper/user
+    // ==================================================
+    // 4. Create user
+    // ==================================================
+
     const user = await userRegistrationRepository.create({
       fullName,
       email: normalizedEmail,
@@ -48,7 +61,29 @@ class UserRegistrationService {
       accountStatus: "active",
     });
 
-    return user;
+    // ==================================================
+    // 5. Send email verification
+    // ==================================================
+
+    await emailVerificationService.sendVerificationEmail(user._id.toString());
+
+    // ==================================================
+    // 6. Return registration result
+    // ==================================================
+
+    return {
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        accountStatus: user.accountStatus,
+      },
+      message:
+        "Registration successful. Please check your email to verify your account.",
+    };
   }
 }
 

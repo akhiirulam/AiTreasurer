@@ -88,6 +88,36 @@ class UserRegistrationRepository {
       },
     );
   }
+
+  async findById(userId: string): Promise<IUserRegistration | null> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return null;
+    }
+
+    return await UserRegistration.findById(userId);
+  }
+
+  /**
+   * Verify user's email.
+   */
+  async verifyEmail(userId: string): Promise<IUserRegistration | null> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return null;
+    }
+
+    return await UserRegistration.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          isEmailVerified: true,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+  }
 }
 
 export default new UserRegistrationRepository();

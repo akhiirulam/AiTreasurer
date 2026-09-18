@@ -5,12 +5,6 @@ dotenv.config();
 
 const smtpPort = Number(process.env.SMTP_PORT || 587);
 
-console.log("SMTP CONFIG:", {
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  user: process.env.SMTP_USER,
-});
-
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: smtpPort,
