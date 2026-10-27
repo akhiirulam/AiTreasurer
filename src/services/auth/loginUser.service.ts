@@ -52,6 +52,8 @@ class UserLoginService {
     // 4. Check email verification
     // ==================================================
 
+    console.log(user.isEmailVerified);
+
     if (user.authProvider === "local" && !user.isEmailVerified) {
       throw new Error("Please verify your email before logging in");
     }
